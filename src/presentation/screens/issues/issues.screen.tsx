@@ -1,24 +1,33 @@
 import { View, FlatList, RefreshControl } from 'react-native';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useProviderStore } from '../../../infrastructure/hooks';
 import { ProviderFactory } from '../../../infrastructure/providers/provider-factory';
-import { ExpoSecureStoreAdapter } from '../../../infrastructure/storage/expo-secure-store.adapter';
 import { useIssues } from '../../../infrastructure/react-query';
 import { Text, Card, Badge, Button, Spinner, EmptyState, ErrorState } from '../../components';
+import { notify } from '../../lib/notify';
 import type { Issue } from '../../../domain/entities';
 import type { IssueState } from '../../../domain/value-objects';
 import type { MainStackScreenProps } from '../../navigation/types';
 
 type Props = MainStackScreenProps<'Issues'>;
 
-const storage = ExpoSecureStoreAdapter.getInstance();
+const FILTER_LABELS: Record<IssueState | 'all', string> = {
+  all: 'Todas',
+  open: 'Abertas',
+  closed: 'Fechadas',
+};
+
+const STATE_LABELS: Record<IssueState, string> = {
+  open: 'aberta',
+  closed: 'fechada',
+};
 
 export function IssuesScreen({ route }: Props) {
   const { owner, name } = route.params;
   const [filter, setFilter] = useState<IssueState | 'all'>('all');
   const activeProvider = useProviderStore((state) => state.activeProvider);
 
-  const providers = ProviderFactory.create(activeProvider, storage);
+  const providers = useMemo(() => ProviderFactory.create(activeProvider), [activeProvider]);
   const {
     data,
     isLoading,
@@ -29,9 +38,9 @@ export function IssuesScreen({ route }: Props) {
     hasNextPage,
     isFetchingNextPage,
     isRefetching,
-  } = useIssues(providers.issue, { owner, name, state: filter });
+  } = useIssues(providers.issue, { provider: activeProvider, owner, name, state: filter });
 
-  const issues = data?.pages.flatMap((page) => page.items) ?? [];
+  const issues = useMemo(() => data?.pages.flatMap((page) => page.items) ?? [], [data]);
 
   const handleEndReached = useCallback(() => {
     if (hasNextPage && !isFetchingNextPage) {
@@ -52,14 +61,14 @@ export function IssuesScreen({ route }: Props) {
             </Text>
           </View>
           <Badge
-            label={item.state}
+            label={STATE_LABELS[item.state]}
             variant={item.state === 'open' ? 'success' : 'error'}
           />
         </View>
-        <View className="flex-row gap-md mt-sm">
+        <View className="mt-sm flex-row gap-md">
           <Badge label={`💬 ${item.commentsCount}`} />
           <Text variant="caption" color="tertiary">
-            by {item.author.login}
+            por {item.author.login}
           </Text>
         </View>
       </Card>
@@ -67,21 +76,26 @@ export function IssuesScreen({ route }: Props) {
     []
   );
 
-  if (isError) {
+  useEffect(() => {
+    if (isError && issues.length > 0) {
+      notify.error('Falha ao atualizar as issues', { description: (error as Error).message });
+    }
+  }, [isError, error, issues.length]);
+
+  if (isError && issues.length === 0) {
     return <ErrorState message={(error as Error).message} onRetry={refetch} />;
   }
 
   return (
     <View className="flex-1 bg-background">
-      <View className="flex-row p-lg gap-sm">
+      <View className="flex-row gap-sm p-lg">
         {(['all', 'open', 'closed'] as const).map((state) => (
           <Button
             key={state}
             variant={filter === state ? 'primary' : 'secondary'}
             size="sm"
-            onPress={() => setFilter(state)}
-          >
-            {state.charAt(0).toUpperCase() + state.slice(1)}
+            onPress={() => setFilter(state)}>
+            {FILTER_LABELS[state]}
           </Button>
         ))}
       </View>
@@ -91,8 +105,8 @@ export function IssuesScreen({ route }: Props) {
       ) : issues.length === 0 ? (
         <EmptyState
           icon="📋"
-          title="No issues found"
-          description="This repository has no issues"
+          title="Nenhuma issue encontrada"
+          description="Este repositório não possui issues"
         />
       ) : (
         <FlatList
@@ -103,9 +117,7 @@ export function IssuesScreen({ route }: Props) {
           onEndReached={handleEndReached}
           onEndReachedThreshold={0.5}
           ListFooterComponent={isFetchingNextPage ? <Spinner className="py-md" /> : null}
-          refreshControl={
-            <RefreshControl refreshing={isRefetching} onRefresh={refetch} />
-          }
+          refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} />}
         />
       )}
     </View>

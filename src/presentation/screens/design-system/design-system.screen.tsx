@@ -1,4 +1,6 @@
-import { ScrollView, View } from 'react-native';
+import { ScrollView, View, Pressable } from 'react-native';
+import { useRef } from 'react';
+import { useColorScheme } from 'nativewind';
 import {
   Button,
   Input,
@@ -12,51 +14,127 @@ import {
   ErrorState,
   Divider,
   Surface,
+  ProviderSwitchSheet,
+  type ProviderSwitchSheetHandle,
 } from '../../components';
+import { notify } from '../../lib/notify';
+
+type ToastTriggerVariant = 'success' | 'error' | 'info';
+
+const TOAST_TRIGGER_CLASSES: Record<ToastTriggerVariant, string> = {
+  success: 'bg-success/15 border-success',
+  error: 'bg-error/15 border-error',
+  info: 'bg-primary/15 border-primary',
+};
+
+const TOAST_TRIGGER_TEXT_CLASSES: Record<ToastTriggerVariant, string> = {
+  success: 'text-success',
+  error: 'text-error',
+  info: 'text-primary',
+};
+
+interface ToastTriggerButtonProps {
+  variant: ToastTriggerVariant;
+  label: string;
+  onPress: () => void;
+}
+
+// Matches each toast type's own accent color (see toast-config.tsx) instead
+// of a generic gray button — the trigger should hint at what it does.
+function ToastTriggerButton({ variant, label, onPress }: ToastTriggerButtonProps) {
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      className={`h-md items-center justify-center rounded-lg border px-lg ${TOAST_TRIGGER_CLASSES[variant]}`}>
+      <Text variant="label" className={`font-semibold ${TOAST_TRIGGER_TEXT_CLASSES[variant]}`}>
+        {label}
+      </Text>
+    </Pressable>
+  );
+}
 
 export function DesignSystemScreen() {
+  const { colorScheme, setColorScheme } = useColorScheme();
+  const sheetRef = useRef<ProviderSwitchSheetHandle>(null);
+
   return (
     <ScrollView className="flex-1 bg-background">
-      <View className="p-lg gap-xl">
-        {/* Typography */}
+      <View className="gap-xl p-lg">
+        {/* Tema */}
         <View className="gap-sm">
-          <Text variant="heading">Typography</Text>
+          <Text variant="heading">Tema</Text>
+          <Divider />
+          <View className="flex-row gap-sm">
+            <Button
+              variant={colorScheme === 'light' ? 'primary' : 'secondary'}
+              size="sm"
+              onPress={() => setColorScheme('light')}
+              accessibilityLabel="Usar tema claro">
+              ☀️ Claro
+            </Button>
+            <Button
+              variant={colorScheme === 'dark' ? 'primary' : 'secondary'}
+              size="sm"
+              onPress={() => setColorScheme('dark')}
+              accessibilityLabel="Usar tema escuro">
+              🌙 Escuro
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onPress={() => setColorScheme('system')}
+              accessibilityLabel="Usar tema do sistema">
+              Sistema
+            </Button>
+          </View>
+        </View>
+
+        {/* Tipografia */}
+        <View className="gap-sm">
+          <Text variant="heading">Tipografia</Text>
           <Divider />
           <Text variant="heading">Heading</Text>
           <Text variant="subheading">Subheading</Text>
-          <Text variant="body">Body text</Text>
-          <Text variant="caption">Caption</Text>
-          <Text variant="label">Label</Text>
+          <Text variant="body">Texto do corpo</Text>
+          <Text variant="caption">Legenda</Text>
+          <Text variant="label">Rótulo</Text>
         </View>
 
-        {/* Colors */}
+        {/* Cores */}
         <View className="gap-sm">
-          <Text variant="heading">Colors</Text>
+          <Text variant="heading">Cores</Text>
           <Divider />
-          <Text color="primary">Primary text</Text>
-          <Text color="secondary">Secondary text</Text>
-          <Text color="tertiary">Tertiary text</Text>
-          <Text color="error">Error text</Text>
-          <Text color="success">Success text</Text>
+          <Text color="primary">Texto primário</Text>
+          <Text color="secondary">Texto secundário</Text>
+          <Text color="tertiary">Texto terciário</Text>
+          <Text color="error">Texto de erro</Text>
+          <Text color="success">Texto de sucesso</Text>
         </View>
 
-        {/* Buttons */}
+        {/* Botões */}
         <View className="gap-sm">
-          <Text variant="heading">Buttons</Text>
+          <Text variant="heading">Botões</Text>
           <Divider />
-          <Button onPress={() => {}}>Primary</Button>
-          <Button variant="secondary" onPress={() => {}}>Secondary</Button>
-          <Button variant="ghost" onPress={() => {}}>Ghost</Button>
-          <Button disabled onPress={() => {}}>Disabled</Button>
+          <Button onPress={() => {}}>Primário</Button>
+          <Button variant="secondary" onPress={() => {}}>
+            Secundário
+          </Button>
+          <Button variant="ghost" onPress={() => {}}>
+            Ghost
+          </Button>
+          <Button disabled onPress={() => {}}>
+            Desabilitado
+          </Button>
         </View>
 
         {/* Input */}
         <View className="gap-sm">
           <Text variant="heading">Input</Text>
           <Divider />
-          <Input placeholder="Search..." onChangeText={() => {}} />
-          <Input label="With Label" placeholder="Enter value" onChangeText={() => {}} />
-          <Input error="This is an error" placeholder="Error state" onChangeText={() => {}} />
+          <Input icon="🔍" placeholder="Buscar..." onChangeText={() => {}} />
+          <Input label="Com rótulo" placeholder="Digite um valor" onChangeText={() => {}} />
+          <Input error="Isto é um erro" placeholder="Estado de erro" onChangeText={() => {}} />
         </View>
 
         {/* Card */}
@@ -64,7 +142,7 @@ export function DesignSystemScreen() {
           <Text variant="heading">Card</Text>
           <Divider />
           <Card>
-            <Text variant="body">Card content goes here</Text>
+            <Text variant="body">Conteúdo do card aqui</Text>
           </Card>
         </View>
 
@@ -73,10 +151,10 @@ export function DesignSystemScreen() {
           <Text variant="heading">Avatar</Text>
           <Divider />
           <View className="flex-row gap-md">
-            <Avatar name="John Doe" size="sm" />
-            <Avatar name="John Doe" size="md" />
-            <Avatar name="John Doe" size="lg" />
-            <Avatar name="John Doe" size="xl" />
+            <Avatar name="João Silva" size="sm" />
+            <Avatar name="João Silva" size="md" />
+            <Avatar name="João Silva" size="lg" />
+            <Avatar name="João Silva" size="xl" />
           </View>
         </View>
 
@@ -84,17 +162,17 @@ export function DesignSystemScreen() {
         <View className="gap-sm">
           <Text variant="heading">Badge</Text>
           <Divider />
-          <View className="flex-row gap-sm flex-wrap">
-            <Badge label="Default" />
-            <Badge label="Success" variant="success" />
-            <Badge label="Error" variant="error" />
-            <Badge label="Warning" variant="warning" />
+          <View className="flex-row flex-wrap gap-sm">
+            <Badge label="Padrão" />
+            <Badge label="Sucesso" variant="success" />
+            <Badge label="Erro" variant="error" />
+            <Badge label="Aviso" variant="warning" />
           </View>
         </View>
 
-        {/* Loading */}
+        {/* Carregamento */}
         <View className="gap-sm">
-          <Text variant="heading">Loading States</Text>
+          <Text variant="heading">Estados de carregamento</Text>
           <Divider />
           <Spinner size="sm" />
           <Spinner size="md" />
@@ -110,25 +188,60 @@ export function DesignSystemScreen() {
           <Skeleton height={20} width="60%" />
         </View>
 
-        {/* Empty State */}
+        {/* Estado vazio */}
         <View className="gap-sm">
-          <Text variant="heading">Empty State</Text>
+          <Text variant="heading">Estado vazio</Text>
           <Divider />
-          <EmptyState
-            icon="📭"
-            title="No data"
-            description="There's nothing to show here"
-          />
+          <EmptyState icon="📭" title="Sem dados" description="Não há nada para mostrar aqui" />
         </View>
 
-        {/* Error State */}
+        {/* Estado de erro */}
         <View className="gap-sm">
-          <Text variant="heading">Error State</Text>
+          <Text variant="heading">Estado de erro</Text>
           <Divider />
-          <ErrorState
-            message="Something went wrong while loading data"
-            onRetry={() => {}}
-          />
+          <ErrorState message="Algo deu errado ao carregar os dados" onRetry={() => {}} />
+        </View>
+
+        {/* Toast */}
+        <View className="gap-sm">
+          <Text variant="heading">Toast</Text>
+          <Divider />
+          <Text variant="body" color="secondary">
+            Usado para avisos e erros que não bloqueiam a tela (ex.: falha ao atualizar uma lista
+            que já tem dados em cache).
+          </Text>
+          <View className="flex-row flex-wrap gap-sm">
+            <ToastTriggerButton
+              variant="success"
+              label="Sucesso"
+              onPress={() => notify.success('Operação concluída', { description: 'Tudo certo.' })}
+            />
+            <ToastTriggerButton
+              variant="error"
+              label="Erro"
+              onPress={() =>
+                notify.error('Falha na requisição', { description: 'Verifique sua conexão.' })
+              }
+            />
+            <ToastTriggerButton
+              variant="info"
+              label="Aviso"
+              onPress={() => notify.info('Fonte alterada', { description: 'Agora usando GitLab.' })}
+            />
+          </View>
+        </View>
+
+        {/* Bottom Sheet */}
+        <View className="gap-sm">
+          <Text variant="heading">Bottom Sheet</Text>
+          <Divider />
+          <Text variant="body" color="secondary">
+            Mesmo componente usado na tela de Busca para trocar a fonte ativa sem sair da tela.
+          </Text>
+          <Button variant="secondary" onPress={() => sheetRef.current?.present()}>
+            Abrir bottom sheet
+          </Button>
+          <ProviderSwitchSheet ref={sheetRef} />
         </View>
 
         {/* Surface */}
@@ -136,7 +249,7 @@ export function DesignSystemScreen() {
           <Text variant="heading">Surface</Text>
           <Divider />
           <Surface className="p-lg">
-            <Text variant="body">Surface content</Text>
+            <Text variant="body">Conteúdo da surface</Text>
           </Surface>
         </View>
       </View>

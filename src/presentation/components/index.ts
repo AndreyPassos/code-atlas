@@ -10,3 +10,7 @@ export { EmptyState } from './empty-state';
 export { ErrorState } from './error-state';
 export { Divider } from './divider';
 export { Surface } from './surface';
+export { MarkdownText } from './markdown-text';
+export { ProviderOption } from './provider-option';
+export { ProviderSwitchSheet } from './provider-switch-sheet';
+export type { ProviderSwitchSheetHandle } from './provider-switch-sheet';
