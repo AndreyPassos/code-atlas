@@ -10,6 +10,11 @@ interface HttpClientConfig {
 }
 
 export function createHttpClient(config: HttpClientConfig) {
+  // axios's default export IS an AxiosStatic instance with .create on
+  // itself; this is the library's own documented usage, not an ambiguous
+  // default/named export collision. `import { create } from 'axios'` is
+  // not valid usage.
+  // eslint-disable-next-line import/no-named-as-default-member
   const client = axios.create({
     baseURL: config.baseURL,
     timeout: config.timeout ?? 10000,

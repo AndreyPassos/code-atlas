@@ -9,7 +9,7 @@ export interface Issue {
   readonly body: string;
   readonly state: IssueState;
   readonly author: Owner;
-  readonly labels: ReadonlyArray<Label>;
+  readonly labels: readonly Label[];
   readonly commentsCount: number;
   readonly createdAt: Date;
   readonly updatedAt: Date;

@@ -7,7 +7,7 @@ export interface Pagination {
 }
 
 export interface PaginatedResult<T> {
-  readonly items: ReadonlyArray<T>;
+  readonly items: readonly T[];
   readonly pagination: Pagination;
 }
 

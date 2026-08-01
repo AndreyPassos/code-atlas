@@ -16,7 +16,7 @@ export interface GitHubIssueDTO {
   readonly body: string;
   readonly state: 'open' | 'closed';
   readonly user: GitHubOwnerDTO;
-  readonly labels: ReadonlyArray<GitHubLabelDTO>;
+  readonly labels: readonly GitHubLabelDTO[];
   readonly comments: number;
   readonly created_at: string;
   readonly updated_at: string;

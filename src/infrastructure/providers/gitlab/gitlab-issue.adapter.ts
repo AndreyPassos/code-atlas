@@ -1,6 +1,10 @@
 import type { AxiosInstance } from 'axios';
 import type { IssuePort } from '../../../domain/ports';
-import type { PaginatedResult, GetIssuesParams, GetCommentsParams } from '../../../domain/value-objects';
+import type {
+  PaginatedResult,
+  GetIssuesParams,
+  GetCommentsParams,
+} from '../../../domain/value-objects';
 import type { Issue, Comment } from '../../../domain/entities';
 import type { GitLabIssueDTO, GitLabCommentDTO } from '../../dtos/gitlab/gitlab-issue.dto';
 import { GitLabIssueMapper } from '../../mappers/gitlab-issue.mapper';
@@ -12,7 +16,7 @@ export class GitLabIssueAdapter implements IssuePort {
     const encodedPath = encodeURIComponent(`${params.owner}/${params.name}`);
     const state = params.state === 'all' ? 'all' : params.state === 'open' ? 'opened' : 'closed';
 
-    const response = await this.apiClient.get<ReadonlyArray<GitLabIssueDTO>>(
+    const response = await this.apiClient.get<readonly GitLabIssueDTO[]>(
       `/projects/${encodedPath}/issues`,
       {
         params: {
@@ -39,7 +43,7 @@ export class GitLabIssueAdapter implements IssuePort {
   async getComments(params: GetCommentsParams): Promise<PaginatedResult<Comment>> {
     const encodedPath = encodeURIComponent(`${params.owner}/${params.name}`);
 
-    const response = await this.apiClient.get<ReadonlyArray<GitLabCommentDTO>>(
+    const response = await this.apiClient.get<readonly GitLabCommentDTO[]>(
       `/projects/${encodedPath}/issues/${params.issueNumber}/notes`,
       {
         params: {

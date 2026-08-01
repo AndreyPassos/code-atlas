@@ -1,6 +1,10 @@
 import type { AxiosInstance } from 'axios';
 import type { IssuePort } from '../../../domain/ports';
-import type { PaginatedResult, GetIssuesParams, GetCommentsParams } from '../../../domain/value-objects';
+import type {
+  PaginatedResult,
+  GetIssuesParams,
+  GetCommentsParams,
+} from '../../../domain/value-objects';
 import type { Issue, Comment } from '../../../domain/entities';
 import type { GitHubIssueDTO, GitHubCommentDTO } from '../../dtos/github/github-issue.dto';
 import { GitHubIssueMapper } from '../../mappers/github-issue.mapper';
@@ -9,7 +13,7 @@ export class GitHubIssueAdapter implements IssuePort {
   constructor(private readonly apiClient: AxiosInstance) {}
 
   async getIssues(params: GetIssuesParams): Promise<PaginatedResult<Issue>> {
-    const response = await this.apiClient.get<ReadonlyArray<GitHubIssueDTO>>(
+    const response = await this.apiClient.get<readonly GitHubIssueDTO[]>(
       `/repos/${params.owner}/${params.name}/issues`,
       {
         params: {
@@ -34,7 +38,7 @@ export class GitHubIssueAdapter implements IssuePort {
   }
 
   async getComments(params: GetCommentsParams): Promise<PaginatedResult<Comment>> {
-    const response = await this.apiClient.get<ReadonlyArray<GitHubCommentDTO>>(
+    const response = await this.apiClient.get<readonly GitHubCommentDTO[]>(
       `/repos/${params.owner}/${params.name}/issues/${params.issueNumber}/comments`,
       {
         params: {

@@ -1,7 +1,10 @@
 import type { Issue, Label, Owner, Comment } from '../../domain/entities';
-import type { IssueId } from '../../domain/value-objects';
 import { createIssueId } from '../../domain/value-objects';
-import type { GitHubIssueDTO, GitHubLabelDTO, GitHubCommentDTO } from '../dtos/github/github-issue.dto';
+import type {
+  GitHubIssueDTO,
+  GitHubLabelDTO,
+  GitHubCommentDTO,
+} from '../dtos/github/github-issue.dto';
 
 function mapLabel(dto: GitHubLabelDTO): Label {
   return { name: dto.name, color: dto.color };

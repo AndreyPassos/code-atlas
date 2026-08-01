@@ -2,7 +2,7 @@ import type { Issue, Label, Comment } from '../../domain/entities';
 import { createIssueId } from '../../domain/value-objects';
 import type { GitLabIssueDTO, GitLabCommentDTO } from '../dtos/gitlab/gitlab-issue.dto';
 
-function mapLabels(labels: ReadonlyArray<string>): ReadonlyArray<Label> {
+function mapLabels(labels: readonly string[]): readonly Label[] {
   return labels.map((name) => ({ name, color: '#007AFF' }));
 }
 

@@ -13,7 +13,7 @@ export interface GitLabIssueDTO {
     readonly username: string;
     readonly avatar_url: string;
   };
-  readonly labels: ReadonlyArray<string>;
+  readonly labels: readonly string[];
   readonly user_notes_count: number;
   readonly created_at: string;
   readonly updated_at: string;
