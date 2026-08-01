@@ -1,5 +1,5 @@
 import { Animated } from 'react-native';
-import { useEffect, useRef } from 'react';
+import { useEffect, useState } from 'react';
 
 export interface SkeletonProps {
   width?: number | `${number}%`;
@@ -14,10 +14,14 @@ export function Skeleton({
   borderRadius = 4,
   testID = 'skeleton',
 }: SkeletonProps) {
-  const opacity = useRef(new Animated.Value(0.3)).current;
+  // Lazy useState initializer, not useRef().current: reading a ref's .current
+  // during render is against the rules of hooks (React may discard/replay a
+  // render), useState's lazy initializer is the correct "create once" escape
+  // hatch for a value that's also needed during render (the `opacity` style).
+  const [opacity] = useState(() => new Animated.Value(0.3));
 
   useEffect(() => {
-    Animated.loop(
+    const animation = Animated.loop(
       Animated.sequence([
         Animated.timing(opacity, {
           toValue: 1,
@@ -30,7 +34,12 @@ export function Skeleton({
           useNativeDriver: true,
         }),
       ])
-    ).start();
+    );
+    animation.start();
+    // Without this, an infinite Animated.loop keeps ticking on the native
+    // side after the component unmounts — every Skeleton ever rendered
+    // during a loading state leaks a running animation.
+    return () => animation.stop();
   }, [opacity]);
 
   return (

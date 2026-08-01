@@ -6,7 +6,6 @@ type BadgeVariant = 'default' | 'success' | 'error' | 'warning';
 interface BadgeProps {
   label: string;
   variant?: BadgeVariant;
-  color?: string;
 }
 
 const variantClasses: Record<BadgeVariant, string> = {
@@ -25,7 +24,7 @@ const textColorClasses: Record<BadgeVariant, string> = {
 
 export function Badge({ label, variant = 'default' }: BadgeProps) {
   return (
-    <View className={`px-sm py-xxs rounded-full ${variantClasses[variant]}`}>
+    <View className={`rounded-full px-sm py-xxs ${variantClasses[variant]}`}>
       <Text variant="caption" className={textColorClasses[variant]}>
         {label}
       </Text>

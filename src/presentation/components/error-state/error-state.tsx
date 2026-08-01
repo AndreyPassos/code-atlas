@@ -10,13 +10,13 @@ export interface ErrorStateProps {
 }
 
 export function ErrorState({
-  title = 'Something went wrong',
+  title = 'Algo deu errado',
   message,
   onRetry,
   testID = 'error-state',
 }: ErrorStateProps) {
   return (
-    <View testID={testID} className="flex-1 items-center justify-center p-xxl gap-lg">
+    <View testID={testID} className="flex-1 items-center justify-center gap-lg p-xxl">
       <Text className="text-4xl">⚠️</Text>
       <Text variant="subheading" className="text-center">
         {title}
@@ -26,7 +26,7 @@ export function ErrorState({
       </Text>
       {onRetry && (
         <Button variant="secondary" onPress={onRetry}>
-          Try again
+          Tentar novamente
         </Button>
       )}
     </View>
