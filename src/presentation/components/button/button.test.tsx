@@ -10,8 +10,7 @@ describe('Button', () => {
   it('calls onPress when pressed', async () => {
     const onPress = jest.fn();
     await render(<Button onPress={onPress}>Press me</Button>);
-    const button = screen.getByTestId('button');
-    button.props.onPress();
+    await fireEvent.press(screen.getByTestId('button'));
     expect(onPress).toHaveBeenCalledTimes(1);
   });
 
@@ -45,7 +44,7 @@ describe('Button', () => {
         Disabled
       </Button>
     );
-    fireEvent.press(screen.getByTestId('button'));
+    await fireEvent.press(screen.getByTestId('button'));
     expect(onPress).not.toHaveBeenCalled();
   });
 });
