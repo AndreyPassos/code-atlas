@@ -2,8 +2,9 @@ import { ActivityIndicator, ActivityIndicatorProps, View } from 'react-native';
 import { useColorScheme } from 'nativewind';
 import { colors } from '../../../shared/design-tokens';
 
-export interface SpinnerProps extends Omit<ActivityIndicatorProps, 'size'> {
+export interface SpinnerProps extends Omit<ActivityIndicatorProps, 'size' | 'className'> {
   size?: 'sm' | 'md' | 'lg';
+  className?: string;
 }
 
 /**
@@ -24,12 +25,22 @@ const SCALE: Record<'sm' | 'md' | 'lg', number> = {
   lg: 1.25,
 };
 
-export function Spinner({ size = 'md', testID = 'spinner', color, ...props }: SpinnerProps) {
+export function Spinner({
+  size = 'md',
+  testID = 'spinner',
+  color,
+  className,
+  ...props
+}: SpinnerProps) {
   const { colorScheme } = useColorScheme();
   const scheme = colorScheme === 'dark' ? colors.dark : colors.light;
 
   return (
-    <View style={{ transform: [{ scale: SCALE[size] }] }}>
+    // Layout classNames (flex-1, justify-center, margins, ...) belong on
+    // this wrapper, not the ActivityIndicator itself -- it's not a flex
+    // container, so a caller's `className="flex-1 justify-center"` would
+    // silently do nothing if applied to it directly.
+    <View className={className} style={{ transform: [{ scale: SCALE[size] }] }}>
       <ActivityIndicator
         size={NATIVE_SIZE[size]}
         color={color ?? scheme.primary}

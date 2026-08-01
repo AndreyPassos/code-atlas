@@ -8,7 +8,8 @@ const Stack = createStackNavigator<MainStackParamList>();
 
 export function MainStack() {
   return (
-    <Stack.Navigator screenOptions={{ headerBackButtonDisplayMode: 'minimal' }}>
+    <Stack.Navigator
+      screenOptions={{ headerBackButtonDisplayMode: 'default', headerBackTitle: 'Voltar' }}>
       <Stack.Screen name="Tabs" component={TabNavigator} options={{ headerShown: false }} />
       <Stack.Screen
         name="RepositoryDetails"
