@@ -11,6 +11,7 @@
 Code Atlas is a React Native/Expo mobile application for browsing GitHub and GitLab repositories. It supports runtime provider switching, OAuth authentication, and offline-friendly UX patterns.
 
 **Core Requirements:**
+
 - Browse and search repositories from GitHub/GitLab
 - View repository details with README rendering
 - View issues with pagination
@@ -51,13 +52,13 @@ Dependencies flow inward. Outer layers depend on inner layers, never the reverse
 
 ### 2.2 Layer Rules
 
-| Layer | Can Import | Cannot Import |
-|-------|-----------|---------------|
-| Domain | Nothing (pure TS) | React, Axios, Expo, React Query |
-| Application | Domain only | React, Axios, Expo, React Query |
-| Infrastructure | Domain, Application | React (except hooks) |
-| Presentation | Application, Domain | Axios, Infrastructure implementations |
-| Composition Root | Everything | Nothing (wires dependencies) |
+| Layer            | Can Import          | Cannot Import                         |
+| ---------------- | ------------------- | ------------------------------------- |
+| Domain           | Nothing (pure TS)   | React, Axios, Expo, React Query       |
+| Application      | Domain only         | React, Axios, Expo, React Query       |
+| Infrastructure   | Domain, Application | React (except hooks)                  |
+| Presentation     | Application, Domain | Axios, Infrastructure implementations |
+| Composition Root | Everything          | Nothing (wires dependencies)          |
 
 ### 2.3 State Management Split
 
@@ -186,9 +187,15 @@ class DomainError extends Error {
   }
 }
 
-class RepositoryNotFoundError extends DomainError { /* ... */ }
-class AuthenticationRequiredError extends DomainError { /* ... */ }
-class ProviderUnavailableError extends DomainError { /* ... */ }
+class RepositoryNotFoundError extends DomainError {
+  /* ... */
+}
+class AuthenticationRequiredError extends DomainError {
+  /* ... */
+}
+class ProviderUnavailableError extends DomainError {
+  /* ... */
+}
 ```
 
 ---
@@ -223,6 +230,7 @@ class ProviderFactory {
 ```
 
 **Swap Flow:**
+
 1. User selects provider on SourceSelector screen
 2. Zustand updates `activeProvider` state
 3. ProviderFactory creates new adapter instances
@@ -274,6 +282,7 @@ class GitHubRepositoryMapper {
 ### 4.5 Secure Storage
 
 Expo SecureStore for auth tokens:
+
 - `auth_token` — GitHub/GitLab OAuth token
 - `provider_type` — Active provider preference
 
@@ -283,13 +292,13 @@ Expo SecureStore for auth tokens:
 
 ### 5.1 Screens
 
-| Screen | Description | Key Features |
-|--------|-------------|--------------|
-| SourceSelector | Choose GitHub/GitLab | Provider cards, auth status, logout |
-| RepositorySearch | Search repositories | Infinite scroll, debounced search, pull-to-refresh |
-| RepositoryDetails | View repo details | Stats, README, language, owner |
-| Issues | View issues | State filter, pagination, comments |
-| DesignSystem | Showcase all components | All DS components displayed |
+| Screen            | Description             | Key Features                                       |
+| ----------------- | ----------------------- | -------------------------------------------------- |
+| SourceSelector    | Choose GitHub/GitLab    | Provider cards, auth status, logout                |
+| RepositorySearch  | Search repositories     | Infinite scroll, debounced search, pull-to-refresh |
+| RepositoryDetails | View repo details       | Stats, README, language, owner                     |
+| Issues            | View issues             | State filter, pagination, comments                 |
+| DesignSystem      | Showcase all components | All DS components displayed                        |
 
 ### 5.2 UX Patterns
 
@@ -359,13 +368,13 @@ All use NativeWind `className`, all accept `testID`, all are typed.
 
 ### 7.2 Approach
 
-| Layer | Method | Mocking |
-|-------|--------|---------|
-| Domain | Unit tests | Mock ports |
-| Mappers | Unit tests | None (pure functions) |
-| Adapters | Unit tests | Mock Axios |
-| Components | RNTL render | None |
-| Screens | RNTL render | Mock hooks |
+| Layer      | Method      | Mocking               |
+| ---------- | ----------- | --------------------- |
+| Domain     | Unit tests  | Mock ports            |
+| Mappers    | Unit tests  | None (pure functions) |
+| Adapters   | Unit tests  | Mock Axios            |
+| Components | RNTL render | None                  |
+| Screens    | RNTL render | Mock hooks            |
 
 ### 7.3 What We Don't Test
 
@@ -402,17 +411,56 @@ All use NativeWind `className`, all accept `testID`, all are typed.
 
 ---
 
-## 9. Trade-offs
+## 9a. Revision — 2026-08-01 UI/UX & Correctness Audit
 
-| Decision | Why |
-|----------|-----|
-| Zustand + React Query split | Zustand for UI state, React Query for server state — clean separation |
-| Factory Pattern for providers | Single swap point, no if/else scattered in UI |
-| Branded types for IDs | Type safety prevents mixing IDs from different entities |
-| No snapshot tests | Brittle, low value, hard to maintain |
-| NativeWind exclusively | Consistent styling, dark mode support, no StyleSheet |
-| Barrel exports | Cleaner imports, easier refactoring |
-| Composition Root pattern | Dependencies wired at entry, not scattered |
+**Status:** Applied. All 32 tasks from the implementation plan had shipped and been marked complete, but a post-hoc audit against this spec (triggered by user request to verify colors/layout/screens/functionality and add tab icons) found the design system's color layer was non-functional and several UX/architecture requirements from this spec were unmet. Fixed directly on top of the existing implementation rather than re-planning from scratch.
+
+### Root-cause bug: color tokens never actually applied
+
+`tailwind.config.js` defined every color as a nested `{ light, dark }` object (e.g. `primary: { light: '#007AFF', dark: '#0A84FF' }`). Tailwind only generates flat utility classes from that shape as `bg-primary-light` / `bg-primary-dark` — but all 15 component/screen files were written using flat classes (`bg-primary`, `text-text-secondary`, `border-border`, ...) per §6.2 of this spec. None of those classes existed, so buttons, cards, badges, inputs, and text rendered with no color at all (default RN black/transparent), and dark mode never had any wiring to switch anything. **Fix:** rebuilt the token layer as CSS custom properties (`global.css`, `:root` + `@media (prefers-color-scheme: dark)`) consumed via Tailwind's `rgb(var(--x) / <alpha-value>)` pattern (`darkMode: 'media'`), so every existing flat class now resolves to the correct light/dark value — zero changes needed across the 15 consumer files.
+
+Two downstream symptoms of the same root cause, fixed alongside it:
+
+- `Text` applied no color class when `color` was omitted (most body text in the app) — invisible against a dark background once dark mode actually started working. Now defaults to the `text` token.
+- `theme.provider.tsx` returned React Navigation's stock `DefaultTheme`/`DarkTheme` instead of deriving from the app's own tokens, so header/tab-bar chrome visually clashed with the (now-correct) screen colors. Now built from `shared/theme` per color scheme.
+
+### Missing tab icons (user-reported)
+
+`tab-navigator.tsx` had zero `tabBarIcon` — `@expo/vector-icons` was a declared dependency, unused anywhere in `src/`. Added `Ionicons` per tab (filled/outline for active/inactive) plus themed active/inactive tint colors and `tabBarAccessibilityLabel` on each tab.
+
+### Spec-vs-implementation gaps found and fixed
+
+| Gap                                                                                                                                                                                                                          | Spec reference                      | Fix                                                                                                                                                                                                                                                                                                                       |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Search fired a query on every keystroke, no debounce                                                                                                                                                                         | §5.2 "Debounced Search: 300ms"      | Added 300ms debounce in `repository-search.screen.tsx`                                                                                                                                                                                                                                                                    |
+| Search results were not pressable — no route from Search → Details existed in the UI despite the stack screen existing                                                                                                       | §5.3 navigation flow                | Wrapped result rows in `Pressable`, navigates to `RepositoryDetails`                                                                                                                                                                                                                                                      |
+| Login screen fabricated a fake user directly into the Zustand store, bypassing `LoginUseCase`/`AuthPort` entirely — the one screen where the UI silently violated "UI consumes only use cases" (top-level architecture rule) | Architecture rules, §5.1            | Wired through `LoginUseCase(authPort)` via `ProviderFactory`; added an honestly-labeled "Continue as guest (public repos only)" option since GitHub/GitLab search doesn't require auth and the real OAuth adapters intentionally `throw` until a provider app's client credentials are configured (see Known Limitations) |
+| SourceSelector was missing auth status + logout, both explicitly required                                                                                                                                                    | §5.1 SourceSelector row             | Added avatar/login + "Sign out" button                                                                                                                                                                                                                                                                                    |
+| README rendered as raw markdown source (`#`, `**`, `-` visible to the user)                                                                                                                                                  | §5.1 "View repo details ... README" | Added a small dependency-free `MarkdownText` component (headings, bold, bullets) — not full CommonMark, scoped to what READMEs typically need                                                                                                                                                                             |
+| `Input` never passed an accessible name to the underlying `TextInput`, and used a hardcoded hex placeholder color that didn't adapt to dark mode                                                                             | UX/accessibility (implicit)         | `accessibilityLabel` now derived from `label`/`placeholder`; placeholder + input text now use theme tokens                                                                                                                                                                                                                |
+| `Spinner` had no color, rendering RN's default gray instead of the brand color used everywhere else                                                                                                                          | Design system consistency           | Defaults to the `primary` token                                                                                                                                                                                                                                                                                           |
+| `Badge` declared an unused `color` prop                                                                                                                                                                                      | Dead code                           | Removed                                                                                                                                                                                                                                                                                                                   |
+| 4 pre-existing TypeScript/ESLint errors unrelated to the above (two test files importing branded ID types from the wrong module, a possibly-undefined retry counter, an unexported `ButtonProps` type)                       | N/A                                 | Fixed; `tsc --noEmit` and `eslint` both clean on all touched files; full-project lint debt reduced from 13/15 to 9/14 (errors/warnings) — remainder is pre-existing `array-type` style nits and a `skeleton.tsx` `react-hooks/refs` warning outside this audit's scope                                                    |
+
+### Known limitations (documented, not silently dropped)
+
+- **Real OAuth is still not implemented.** `GitHubAuthAdapter.login()` / `GitLabAuthAdapter.login()` correctly `throw` rather than fake success — implementing it for real requires registering OAuth apps with GitHub/GitLab and, for GitHub specifically, a token-exchange step that cannot be done safely from a public mobile client without a backend proxy (GitHub OAuth apps require a client secret). This is a product/infra decision, not something to paper over in a UI pass.
+- **Offline handling (§5.2) is unimplemented.** No network-state library (e.g. `@react-native-community/netinfo`) is installed; none of the three data screens detect connectivity. Left undone rather than half-wired without the ability to verify on-device in this environment — flagged here as the next task, not silently skipped.
+
+---
+
+## 9b. Trade-offs
+
+| Decision                               | Why                                                                                                                                                                                               |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Zustand + React Query split            | Zustand for UI state, React Query for server state — clean separation                                                                                                                             |
+| Factory Pattern for providers          | Single swap point, no if/else scattered in UI                                                                                                                                                     |
+| Branded types for IDs                  | Type safety prevents mixing IDs from different entities                                                                                                                                           |
+| No snapshot tests                      | Brittle, low value, hard to maintain                                                                                                                                                              |
+| NativeWind exclusively                 | Consistent styling, dark mode support, no StyleSheet                                                                                                                                              |
+| Barrel exports                         | Cleaner imports, easier refactoring                                                                                                                                                               |
+| Composition Root pattern               | Dependencies wired at entry, not scattered                                                                                                                                                        |
+| CSS-variable color tokens (2026-08-01) | Nested `{light,dark}` Tailwind colors don't generate the flat classes the app actually uses — `rgb(var(--x) / <alpha-value>)` + media-query dark mode fixes it without touching 15 consumer files |
 
 ---
 
