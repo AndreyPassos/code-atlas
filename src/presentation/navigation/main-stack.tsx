@@ -8,12 +8,12 @@ const Stack = createStackNavigator<MainStackParamList>();
 
 export function MainStack() {
   return (
-    <Stack.Navigator>
+    <Stack.Navigator screenOptions={{ headerBackButtonDisplayMode: 'minimal' }}>
       <Stack.Screen name="Tabs" component={TabNavigator} options={{ headerShown: false }} />
       <Stack.Screen
         name="RepositoryDetails"
         component={RepositoryDetailsScreen}
-        options={{ title: 'Repository' }}
+        options={{ title: 'Repositório' }}
       />
       <Stack.Screen name="Issues" component={IssuesScreen} options={{ title: 'Issues' }} />
     </Stack.Navigator>
