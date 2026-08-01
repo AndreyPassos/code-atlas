@@ -1,4 +1,4 @@
-import type { AxiosError, InternalAxiosRequestConfig } from 'axios';
+import type { AxiosError } from 'axios';
 
 export interface ApiError {
   readonly message: string;
@@ -6,14 +6,32 @@ export interface ApiError {
   readonly code: string;
 }
 
+function toFriendlyMessage(error: AxiosError): string {
+  if (!error.response) {
+    return 'Sem conexão com a internet. Verifique sua rede e tente novamente.';
+  }
+
+  const status = error.response.status;
+
+  if (status === 403 || status === 429) {
+    return 'Limite de requisições da API excedido. Aguarde alguns minutos e tente novamente.';
+  }
+
+  if (status === 404) {
+    return 'Não encontrado.';
+  }
+
+  return error.message || 'Ocorreu um erro inesperado.';
+}
+
 export function createErrorInterceptor() {
   return {
     onRejected: (error: AxiosError) => {
-      const status = error.response?.status ?? 500;
-      const message = error.message || 'An unexpected error occurred';
-      const code = error.code ?? 'UNKNOWN_ERROR';
-
-      const apiError: ApiError = { message, status, code };
+      const apiError: ApiError = {
+        message: toFriendlyMessage(error),
+        status: error.response?.status ?? 0,
+        code: error.code ?? 'UNKNOWN_ERROR',
+      };
       return Promise.reject(apiError);
     },
   };

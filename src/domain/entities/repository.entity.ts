@@ -8,6 +8,7 @@ export interface Repository {
   readonly description: string | null;
   readonly stars: number;
   readonly forks: number;
+  readonly watchers: number | null;
   readonly language: string | null;
   readonly owner: Owner;
   readonly updatedAt: Date;

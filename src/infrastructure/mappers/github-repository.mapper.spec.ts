@@ -10,6 +10,7 @@ describe('GitHubRepositoryMapper', () => {
       description: 'A JavaScript library for building user interfaces',
       stargazers_count: 100000,
       forks_count: 20000,
+      subscribers_count: 1500,
       language: 'JavaScript',
       owner: {
         login: 'facebook',
@@ -26,6 +27,7 @@ describe('GitHubRepositoryMapper', () => {
     expect(result.fullName).toBe('facebook/react');
     expect(result.stars).toBe(100000);
     expect(result.forks).toBe(20000);
+    expect(result.watchers).toBe(1500);
     expect(result.language).toBe('JavaScript');
     expect(result.owner.login).toBe('facebook');
     expect(result.owner.type).toBe('Organization');

@@ -1,5 +1,4 @@
 import type { Repository, Owner } from '../../domain/entities';
-import type { RepositoryId } from '../../domain/value-objects';
 import { createRepositoryId } from '../../domain/value-objects';
 import type { GitHubRepositoryDTO, GitHubOwnerDTO } from '../dtos/github/github-repository.dto';
 
@@ -20,6 +19,7 @@ export class GitHubRepositoryMapper {
       description: dto.description,
       stars: dto.stargazers_count,
       forks: dto.forks_count,
+      watchers: dto.subscribers_count ?? null,
       language: dto.language,
       owner: mapOwner(dto.owner),
       updatedAt: new Date(dto.updated_at),

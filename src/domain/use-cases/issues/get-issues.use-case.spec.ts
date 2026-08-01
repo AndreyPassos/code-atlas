@@ -1,7 +1,7 @@
 import { GetIssuesUseCase } from './get-issues.use-case';
 import type { IssuePort } from '../../ports';
-import type { PaginatedResult, GetIssuesParams } from '../../value-objects';
-import type { Issue, IssueId } from '../../entities';
+import type { PaginatedResult, IssueId } from '../../value-objects';
+import type { Issue } from '../../entities';
 
 describe('GetIssuesUseCase', () => {
   let useCase: GetIssuesUseCase;

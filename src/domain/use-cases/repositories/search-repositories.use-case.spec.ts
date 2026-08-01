@@ -1,7 +1,7 @@
 import { SearchRepositoriesUseCase } from './search-repositories.use-case';
 import type { RepositoryPort } from '../../ports';
-import type { PaginatedResult, SearchParams } from '../../value-objects';
-import type { Repository, RepositoryId } from '../../entities';
+import type { PaginatedResult, RepositoryId } from '../../value-objects';
+import type { Repository } from '../../entities';
 
 describe('SearchRepositoriesUseCase', () => {
   let useCase: SearchRepositoriesUseCase;
@@ -26,6 +26,7 @@ describe('SearchRepositoriesUseCase', () => {
           description: 'A JavaScript library',
           stars: 100000,
           forks: 20000,
+          watchers: 1500,
           language: 'JavaScript',
           owner: { login: 'facebook', avatarUrl: '', type: 'Organization' },
           updatedAt: new Date(),
@@ -41,7 +42,11 @@ describe('SearchRepositoriesUseCase', () => {
 
     expect(result.items).toHaveLength(1);
     expect(result.items[0].name).toBe('react');
-    expect(mockRepositoryPort.search).toHaveBeenCalledWith({ query: 'react', page: 1, perPage: 20 });
+    expect(mockRepositoryPort.search).toHaveBeenCalledWith({
+      query: 'react',
+      page: 1,
+      perPage: 20,
+    });
   });
 
   it('should return empty results for no matches', async () => {

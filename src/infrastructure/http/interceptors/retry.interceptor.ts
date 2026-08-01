@@ -1,34 +1,34 @@
-import type { AxiosError, InternalAxiosRequestConfig } from 'axios';
+import type { AxiosError, AxiosInstance, InternalAxiosRequestConfig } from 'axios';
 
 interface RetryConfig {
   maxRetries?: number;
   retryDelay?: number;
 }
 
-export function createRetryInterceptor(config: RetryConfig = {}) {
+type RetryableRequestConfig = InternalAxiosRequestConfig & { __retryCount?: number };
+
+export function createRetryInterceptor(client: AxiosInstance, config: RetryConfig = {}) {
   const { maxRetries = 3, retryDelay = 1000 } = config;
 
   return {
     onRejected: async (error: AxiosError) => {
-      const request = error.config as InternalAxiosRequestConfig & { __retryCount?: number };
-
-      if (!request?.__retryCount) {
-        request.__retryCount = 0;
-      }
-
-      const retryCount = request.__retryCount;
-      if (retryCount >= maxRetries) {
+      const request = error.config as RetryableRequestConfig | undefined;
+      if (!request) {
         return Promise.reject(error);
       }
 
+      const retryCount = request.__retryCount ?? 0;
       const status = error.response?.status;
-      if (status && status >= 500) {
-        request.__retryCount = retryCount + 1;
-        await new Promise((resolve) => setTimeout(resolve, retryDelay * request.__retryCount));
+      const isRetryable = !status || status >= 500;
+
+      if (retryCount >= maxRetries || !isRetryable) {
         return Promise.reject(error);
       }
 
-      return Promise.reject(error);
+      const nextRetryCount = retryCount + 1;
+      request.__retryCount = nextRetryCount;
+      await new Promise((resolve) => setTimeout(resolve, retryDelay * nextRetryCount));
+      return client(request);
     },
   };
 }

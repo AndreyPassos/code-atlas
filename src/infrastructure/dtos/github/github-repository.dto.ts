@@ -11,6 +11,7 @@ export interface GitHubRepositoryDTO {
   readonly description: string | null;
   readonly stargazers_count: number;
   readonly forks_count: number;
+  readonly subscribers_count?: number;
   readonly language: string | null;
   readonly owner: GitHubOwnerDTO;
   readonly updated_at: string;
@@ -19,5 +20,5 @@ export interface GitHubRepositoryDTO {
 export interface GitHubSearchResponseDTO {
   readonly total_count: number;
   readonly incomplete_results: boolean;
-  readonly items: ReadonlyArray<GitHubRepositoryDTO>;
+  readonly items: readonly GitHubRepositoryDTO[];
 }

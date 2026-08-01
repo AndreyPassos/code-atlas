@@ -16,9 +16,6 @@ export interface GitLabRepositoryDTO {
   readonly last_activity_at: string;
 }
 
-export interface GitLabSearchResponseDTO {
-  readonly data: ReadonlyArray<GitLabRepositoryDTO>;
-  readonly total: number;
-  readonly page: number;
-  readonly per_page: number;
+export interface GitLabReadmeFileDTO {
+  readonly content: string;
 }

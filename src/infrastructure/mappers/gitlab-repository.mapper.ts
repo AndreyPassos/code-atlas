@@ -22,6 +22,7 @@ export class GitLabRepositoryMapper {
       description: dto.description,
       stars: dto.star_count,
       forks: dto.forks_count,
+      watchers: null,
       language: dto.language,
       owner: mapOwner(dto.owner),
       updatedAt: new Date(dto.last_activity_at),
