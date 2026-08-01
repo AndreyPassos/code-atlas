@@ -1,77 +1,79 @@
-import { View } from 'react-native';
-import { Text } from '../text';
+import { Linking } from 'react-native';
+import { useColorScheme } from 'nativewind';
+import { EnrichedMarkdownText, type MarkdownStyle } from 'react-native-enriched-markdown';
+import { colors } from '../../../shared/design-tokens';
 
 export interface MarkdownTextProps {
   content: string;
   testID?: string;
 }
 
-function renderInline(text: string, keyPrefix: string) {
-  return text
-    .split(/(\*\*[^*]+\*\*)/g)
-    .filter(Boolean)
-    .map((part, index) =>
-      part.startsWith('**') && part.endsWith('**') ? (
-        <Text key={`${keyPrefix}-${index}`} className="font-bold">
-          {part.slice(2, -2)}
-        </Text>
-      ) : (
-        <Text key={`${keyPrefix}-${index}`}>{part}</Text>
-      )
-    );
+interface ColorScheme {
+  readonly background: string;
+  readonly surface: string;
+  readonly text: string;
+  readonly textSecondary: string;
+  readonly primary: string;
+  readonly error: string;
+  readonly border: string;
+}
+
+function buildMarkdownStyle(scheme: ColorScheme): MarkdownStyle {
+  return {
+    paragraph: { color: scheme.text, fontSize: 16, lineHeight: 22, marginBottom: 8 },
+    h1: { color: scheme.text, fontSize: 28, fontWeight: '700', marginTop: 16, marginBottom: 8 },
+    h2: { color: scheme.text, fontSize: 24, fontWeight: '700', marginTop: 14, marginBottom: 8 },
+    h3: { color: scheme.text, fontSize: 20, fontWeight: '600', marginTop: 12, marginBottom: 6 },
+    h4: { color: scheme.text, fontSize: 18, fontWeight: '600', marginTop: 10, marginBottom: 6 },
+    h5: { color: scheme.text, fontSize: 16, fontWeight: '600', marginTop: 8, marginBottom: 4 },
+    h6: {
+      color: scheme.textSecondary,
+      fontSize: 14,
+      fontWeight: '600',
+      marginTop: 8,
+      marginBottom: 4,
+    },
+    blockquote: {
+      color: scheme.textSecondary,
+      borderColor: scheme.border,
+      backgroundColor: scheme.surface,
+    },
+    list: { color: scheme.text, bulletColor: scheme.primary, markerColor: scheme.primary },
+    codeBlock: { backgroundColor: scheme.surface, borderColor: scheme.border, color: scheme.text },
+    code: { backgroundColor: scheme.surface, color: scheme.error },
+    link: { color: scheme.primary, underline: true },
+    strong: { color: scheme.text },
+    em: { color: scheme.text },
+    thematicBreak: { color: scheme.border },
+    table: {
+      color: scheme.text,
+      borderColor: scheme.border,
+      headerBackgroundColor: scheme.surface,
+      headerTextColor: scheme.text,
+      rowOddBackgroundColor: scheme.background,
+      rowEvenBackgroundColor: scheme.surface,
+    },
+    taskList: { checkedColor: scheme.primary, checkmarkColor: scheme.background },
+  };
 }
 
 /**
- * Minimal, dependency-free renderer for the subset of markdown found in
- * repository READMEs (headings, bold, bullet lists). Not a full CommonMark
- * implementation — good enough to stop raw `#`/`*` syntax leaking to users.
+ * Renders repository READMEs (CommonMark + GFM — tables, task lists) using
+ * react-native-enriched-markdown's native renderer, themed to match the rest
+ * of the design system instead of the library's light-mode defaults.
  */
 export function MarkdownText({ content, testID = 'markdown-text' }: MarkdownTextProps) {
-  const lines = content.split('\n');
+  const { colorScheme } = useColorScheme();
+  const scheme = colorScheme === 'dark' ? colors.dark : colors.light;
 
   return (
-    <View testID={testID} className="gap-xs">
-      {lines.map((line, index) => {
-        const key = `line-${index}`;
-
-        if (line.startsWith('### ')) {
-          return (
-            <Text key={key} variant="label" className="mt-sm">
-              {renderInline(line.slice(4), key)}
-            </Text>
-          );
-        }
-        if (line.startsWith('## ')) {
-          return (
-            <Text key={key} variant="subheading" className="mt-md">
-              {renderInline(line.slice(3), key)}
-            </Text>
-          );
-        }
-        if (line.startsWith('# ')) {
-          return (
-            <Text key={key} variant="heading" className="mt-md">
-              {renderInline(line.slice(2), key)}
-            </Text>
-          );
-        }
-        if (line.startsWith('- ') || line.startsWith('* ')) {
-          return (
-            <Text key={key} variant="body">
-              {'• '}
-              {renderInline(line.slice(2), key)}
-            </Text>
-          );
-        }
-        if (line.trim() === '') {
-          return <View key={key} className="h-xs" />;
-        }
-        return (
-          <Text key={key} variant="body">
-            {renderInline(line, key)}
-          </Text>
-        );
-      })}
-    </View>
+    <EnrichedMarkdownText
+      testID={testID}
+      markdown={content}
+      flavor="github"
+      selectable
+      onLinkPress={({ url }) => Linking.openURL(url)}
+      markdownStyle={buildMarkdownStyle(scheme)}
+    />
   );
 }

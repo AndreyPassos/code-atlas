@@ -34,6 +34,7 @@ The test's own grading criteria weight "Arquitetura & Desacoplamento" and "Múlt
 - Axios — HTTP client with request/response interceptors
 - `@gorhom/bottom-sheet` — provider switcher, reachable from both the Sources tab and a shortcut on the Search screen
 - `react-native-toast-message` — non-blocking error/warning notifications (see [UX patterns](#ux-patterns))
+- `react-native-enriched-markdown` — native CommonMark + GFM rendering for repository READMEs (requires New Architecture + a dev client, see [Native modules](#native-modules))
 - Jest + React Native Testing Library
 - Reactotron — dev-only network/state inspector (see [Debugging](#debugging))
 
@@ -107,17 +108,29 @@ npx tsc --noEmit      # type check
 
 [Reactotron](https://github.com/infinitered/reactotron) is wired in for development builds only (`src/infrastructure/debug/reactotron.ts`, gated by `__DEV__`, imported once from `App.tsx`). Open the Reactotron desktop app before starting Metro to see every HTTP request/response live — the exact status/body the app received, which is far more useful for diagnosing API issues than reading a caught error's `.message` on screen.
 
+## Native modules
+
+`react-native-enriched-markdown` (README rendering) requires the React Native New Architecture and ships real native code — it does **not** run in Expo Go. This project already has `newArchEnabled=true` (Android) and prebuilt `ios/`/`android/` folders, so:
+
+```bash
+npx expo prebuild   # re-run after pulling changes that touch native deps
+npx expo run:ios     # or: npx expo run:android
+```
+
+`npm start` alone (Expo Go) will fail to render READMEs — build a dev client via `run:ios`/`run:android` at least once.
+
 ## Trade-offs
 
-| Decision                               | Why                                                                                                                                                                           |
-| -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Zustand + React Query split            | Zustand for UI-only state (active provider, search query), React Query for server state — no overlap                                                                          |
-| Factory Pattern for providers          | Single swap point, no `if`/`else` scattered across screens                                                                                                                    |
-| Branded types for repository/issue IDs | Type safety prevents accidentally mixing an ID from one entity with another                                                                                                   |
-| No snapshot tests                      | Brittle, low value, hard to maintain — assertions on behavior instead                                                                                                         |
-| NativeWind + CSS variables             | Design tokens as CSS custom properties (`rgb(var(--x) / <alpha-value>)`) so light/dark is one selector switch, not per-component logic                                        |
-| No manual OAuth login                  | Not required by the test brief (only an optional `.env` token is) — a login gate would have blocked reviewers from reaching the actual graded screens for no requirement gain |
-| No offline/NetInfo integration         | Would need a new native dependency I couldn't verify on a real device in this environment — left undone rather than half-wired                                                |
+| Decision                                    | Why                                                                                                                                                                                     |
+| ------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Zustand + React Query split                 | Zustand for UI-only state (just `activeProvider` today), React Query for server state — no overlap                                                                                      |
+| Factory Pattern for providers               | Single swap point, no `if`/`else` scattered across screens                                                                                                                              |
+| Branded types for repository/issue IDs      | Type safety prevents accidentally mixing an ID from one entity with another                                                                                                             |
+| Native markdown renderer over a pure-JS one | `react-native-enriched-markdown` gives real CommonMark + GFM (tables, task lists) natively; costs Expo Go compatibility (needs a dev client) — worth it since READMEs commonly use both |
+| No snapshot tests                           | Brittle, low value, hard to maintain — assertions on behavior instead                                                                                                                   |
+| NativeWind + CSS variables                  | Design tokens as CSS custom properties (`rgb(var(--x) / <alpha-value>)`) so light/dark is one selector switch, not per-component logic                                                  |
+| No manual OAuth login                       | Not required by the test brief (only an optional `.env` token is) — a login gate would have blocked reviewers from reaching the actual graded screens for no requirement gain           |
+| No offline/NetInfo integration              | Would need a new native dependency I couldn't verify on a real device in this environment — left undone rather than half-wired                                                          |
 
 ## Uso de IA (declaração conforme solicitado no teste)
 
@@ -143,6 +156,7 @@ Este projeto foi construído com assistência intensiva de IA (Claude), em duas 
 - **`ActivityIndicator` com tamanho ignorado**: o `size` numérico do RN `ActivityIndicator` é amplamente ignorado pelas views nativas — os 3 tamanhos do `Spinner` (sm/md/lg) renderizavam visualmente idênticos. Corrigido com `transform: scale`.
 - **`fireEvent` silenciosamente quebrado**: ver seção [Testing](#testing) — bug de configuração de teste que fazia `fireEvent.press`/`fireEvent.changeText` rodarem sem erro e sem disparar nada, mascarando dois testes que na prática não testavam interação real.
 - **Interceptor de retry morto e ordem errada de interceptors**, **paginação do GitLab assumindo shape errado de resposta**, **campo `watchers` ausente**: ver commits `fix: correct GitHub/GitLab API integration`.
+- **Markdown do README**: trocado o parser manual (só títulos/negrito/listas) por [`react-native-enriched-markdown`](https://github.com/software-mansion/react-native-enriched-markdown) — renderização nativa CommonMark + GFM (tabelas, task lists), sem WebView. Exige New Architecture (já habilitada no projeto) e não roda no Expo Go — precisa de `expo prebuild` + dev client.
 
 **O que foi revisado/rejeitado da IA:** todo o código gerado na Fase 1 foi lido, testado (`tsc`, `eslint`, `jest`) e comparado linha a linha contra o PDF real antes de qualquer correção ser aplicada — nenhuma mudança foi aceita sem entender por que o comportamento anterior estava errado. Boa parte dos bugs das Fases 2 e 3 só apareceram porque o código da Fase 1 nunca tinha sido de fato exercitado contra as APIs reais nem testado com interações reais.
 
@@ -151,7 +165,6 @@ Este projeto foi construído com assistência intensiva de IA (Claude), em duas 
 - OAuth real para GitLab é factível sem backend (Authorization Code + PKCE, aplicação pública sem client secret); para GitHub exigiria um backend mínimo só para trocar `code` por `token` (OAuth Apps clássicos do GitHub não suportam PKCE puro) — não implementado por não ser exigido pelo PDF, mas seria o próximo passo natural caso autenticação real fosse necessária.
 - Suporte offline (§7 do PDF) com `@react-native-community/netinfo` — mostrar dados em cache com indicador de "sem conexão" e nova tentativa automática ao reconectar.
 - Testes de tela (screen-level, com mock dos hooks) além dos testes de domínio/mapper/componente já existentes.
-- Renderização de markdown mais completa para o README do repositório (a implementação atual é um parser mínimo sem dependência externa — cobre títulos, negrito e listas, não é CommonMark completo).
 
 ## License
 

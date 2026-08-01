@@ -16,7 +16,8 @@
           "image": "./assets/splash.png",
           "backgroundColor": "#ffffff"
         }
-      ]
+      ],
+      "react-native-enriched-markdown"
     ],
     "orientation": "portrait",
     "icon": "./assets/icon.png",
