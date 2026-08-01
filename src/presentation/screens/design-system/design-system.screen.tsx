@@ -1,6 +1,5 @@
 import { ScrollView, View, Pressable } from 'react-native';
 import { useRef } from 'react';
-import { useColorScheme } from 'nativewind';
 import {
   Button,
   Input,
@@ -18,6 +17,7 @@ import {
   type ProviderSwitchSheetHandle,
 } from '../../components';
 import { notify } from '../../lib/notify';
+import { useThemeStore } from '../../../infrastructure/hooks';
 
 type ToastTriggerVariant = 'success' | 'error' | 'info';
 
@@ -55,7 +55,8 @@ function ToastTriggerButton({ variant, label, onPress }: ToastTriggerButtonProps
 }
 
 export function DesignSystemScreen() {
-  const { colorScheme, setColorScheme } = useColorScheme();
+  const theme = useThemeStore((state) => state.theme);
+  const setTheme = useThemeStore((state) => state.setTheme);
   const sheetRef = useRef<ProviderSwitchSheetHandle>(null);
 
   return (
@@ -65,25 +66,28 @@ export function DesignSystemScreen() {
         <View className="gap-sm">
           <Text variant="heading">Tema</Text>
           <Divider />
+          <Text variant="caption" color="secondary">
+            A escolha fica salva no dispositivo (AsyncStorage) e persiste entre sessões.
+          </Text>
           <View className="flex-row gap-sm">
             <Button
-              variant={colorScheme === 'light' ? 'primary' : 'secondary'}
+              variant={theme === 'light' ? 'primary' : 'secondary'}
               size="sm"
-              onPress={() => setColorScheme('light')}
+              onPress={() => setTheme('light')}
               accessibilityLabel="Usar tema claro">
               ☀️ Claro
             </Button>
             <Button
-              variant={colorScheme === 'dark' ? 'primary' : 'secondary'}
+              variant={theme === 'dark' ? 'primary' : 'secondary'}
               size="sm"
-              onPress={() => setColorScheme('dark')}
+              onPress={() => setTheme('dark')}
               accessibilityLabel="Usar tema escuro">
               🌙 Escuro
             </Button>
             <Button
-              variant="ghost"
+              variant={theme === 'system' ? 'primary' : 'secondary'}
               size="sm"
-              onPress={() => setColorScheme('system')}
+              onPress={() => setTheme('system')}
               accessibilityLabel="Usar tema do sistema">
               Sistema
             </Button>

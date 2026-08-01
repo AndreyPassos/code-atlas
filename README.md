@@ -30,7 +30,8 @@ The test's own grading criteria weight "Arquitetura & Desacoplamento" and "Múlt
 - NativeWind (Tailwind for React Native) — CSS-variable-driven design tokens, manual + system light/dark mode
 - React Navigation 7
 - TanStack Query (React Query) — cache, infinite queries, pull-to-refresh
-- Zustand — UI-only state; today that's just `activeProvider` (search query, issue filter, etc. are local component state, not global)
+- Zustand — UI-only state: `activeProvider` and the theme preference (`light`/`dark`/`system`, persisted — see below). Search query, issue filter, etc. are local component state, not global
+- `@react-native-async-storage/async-storage` — persists the theme preference across app restarts (via zustand's `persist` middleware)
 - Axios — HTTP client with request/response interceptors
 - `@gorhom/bottom-sheet` — provider switcher, reachable from both the Sources tab and a shortcut on the Search screen
 - `react-native-toast-message` — non-blocking error/warning notifications (see [UX patterns](#ux-patterns))
@@ -121,16 +122,17 @@ npx expo run:ios     # or: npx expo run:android
 
 ## Trade-offs
 
-| Decision                                    | Why                                                                                                                                                                                     |
-| ------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Zustand + React Query split                 | Zustand for UI-only state (just `activeProvider` today), React Query for server state — no overlap                                                                                      |
-| Factory Pattern for providers               | Single swap point, no `if`/`else` scattered across screens                                                                                                                              |
-| Branded types for repository/issue IDs      | Type safety prevents accidentally mixing an ID from one entity with another                                                                                                             |
-| Native markdown renderer over a pure-JS one | `react-native-enriched-markdown` gives real CommonMark + GFM (tables, task lists) natively; costs Expo Go compatibility (needs a dev client) — worth it since READMEs commonly use both |
-| No snapshot tests                           | Brittle, low value, hard to maintain — assertions on behavior instead                                                                                                                   |
-| NativeWind + CSS variables                  | Design tokens as CSS custom properties (`rgb(var(--x) / <alpha-value>)`) so light/dark is one selector switch, not per-component logic                                                  |
-| No manual OAuth login                       | Not required by the test brief (only an optional `.env` token is) — a login gate would have blocked reviewers from reaching the actual graded screens for no requirement gain           |
-| No offline/NetInfo integration              | Would need a new native dependency I couldn't verify on a real device in this environment — left undone rather than half-wired                                                          |
+| Decision                                    | Why                                                                                                                                                                                           |
+| ------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Zustand + React Query split                 | Zustand for UI-only state (`activeProvider`, persisted theme preference), React Query for server state — no overlap                                                                           |
+| Zustand `persist` + AsyncStorage for theme  | NativeWind's own colorScheme has no persistence; a `ThemeSync` component applies the persisted preference to NativeWind on mount so it survives an app restart instead of resetting to system |
+| Factory Pattern for providers               | Single swap point, no `if`/`else` scattered across screens                                                                                                                                    |
+| Branded types for repository/issue IDs      | Type safety prevents accidentally mixing an ID from one entity with another                                                                                                                   |
+| Native markdown renderer over a pure-JS one | `react-native-enriched-markdown` gives real CommonMark + GFM (tables, task lists) natively; costs Expo Go compatibility (needs a dev client) — worth it since READMEs commonly use both       |
+| No snapshot tests                           | Brittle, low value, hard to maintain — assertions on behavior instead                                                                                                                         |
+| NativeWind + CSS variables                  | Design tokens as CSS custom properties (`rgb(var(--x) / <alpha-value>)`) so light/dark is one selector switch, not per-component logic                                                        |
+| No manual OAuth login                       | Not required by the test brief (only an optional `.env` token is) — a login gate would have blocked reviewers from reaching the actual graded screens for no requirement gain                 |
+| No offline/NetInfo integration              | Would need a new native dependency I couldn't verify on a real device in this environment — left undone rather than half-wired                                                                |
 
 ## Uso de IA (declaração conforme solicitado no teste)
 
