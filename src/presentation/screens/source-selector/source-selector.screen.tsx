@@ -1,54 +1,49 @@
 import { View } from 'react-native';
 import { useProviderStore } from '../../../infrastructure/hooks';
-import { Card, Text, Button, Avatar, Badge } from '../../components';
+import { Text, Button, ProviderOption } from '../../components';
+import { PROVIDER_DISPLAY } from '../../constants/provider-display';
+import { notify } from '../../lib/notify';
 import type { ProviderType } from '../../../domain/value-objects';
 import type { TabScreenProps } from '../../navigation/types';
 
 type Props = TabScreenProps<'SourceSelector'>;
 
-const providers: ReadonlyArray<{ type: ProviderType; name: string; icon: string }> = [
-  { type: 'github', name: 'GitHub', icon: '🐙' },
-  { type: 'gitlab', name: 'GitLab', icon: '🦊' },
-];
+const providers: readonly ProviderType[] = ['github', 'gitlab'];
 
 export function SourceSelectorScreen({ navigation }: Props) {
   const { activeProvider, setProvider } = useProviderStore();
 
-  const handleSelectProvider = (provider: ProviderType) => {
+  const handleSelect = (provider: ProviderType) => {
+    if (provider === activeProvider) return;
     setProvider(provider);
+    notify.success(`Fonte alterada para ${PROVIDER_DISPLAY[provider].name}`);
   };
 
   return (
-    <View className="flex-1 bg-background p-lg gap-lg">
-      <Text variant="heading">Select Provider</Text>
+    <View className="flex-1 gap-lg bg-background p-lg">
+      <Text variant="heading">Selecionar fonte</Text>
       <Text variant="body" color="secondary">
-        Choose your code hosting platform
+        Escolha a plataforma de hospedagem de código
       </Text>
 
-      <View className="gap-md">
+      <View className="gap-md" accessibilityRole="radiogroup">
         {providers.map((provider) => (
-          <Card key={provider.type}>
-            <Button
-              variant={activeProvider === provider.type ? 'primary' : 'secondary'}
-              onPress={() => handleSelectProvider(provider.type)}
-              className="flex-row items-center gap-md"
-            >
-              <Text className="text-2xl">{provider.icon}</Text>
-              <View className="flex-1">
-                <Text variant="subheading">{provider.name}</Text>
-              </View>
-              {activeProvider === provider.type && <Badge label="Active" variant="success" />}
-            </Button>
-          </Card>
+          <ProviderOption
+            key={provider}
+            icon={PROVIDER_DISPLAY[provider].icon}
+            name={PROVIDER_DISPLAY[provider].name}
+            selected={activeProvider === provider}
+            onPress={() => handleSelect(provider)}
+            testID={`provider-option-${provider}`}
+          />
         ))}
       </View>
 
       <Button
         variant="ghost"
         onPress={() => navigation.navigate('RepositorySearch')}
-        className="mt-auto"
-      >
-        Continue to Search →
+        className="mt-auto">
+        Continuar para a busca →
       </Button>
     </View>
   );
