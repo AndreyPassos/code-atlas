@@ -1,5 +1,4 @@
 import { createHttpClient } from '../../http/axios-client';
-import type { StoragePort } from '../../../domain/ports';
 
 const GITHUB_BASE_URL = 'https://api.github.com';
 
@@ -7,16 +6,16 @@ export class GitHubApiService {
   private static instance: GitHubApiService;
   private readonly client;
 
-  private constructor(storagePort: StoragePort) {
+  private constructor() {
     this.client = createHttpClient({
       baseURL: GITHUB_BASE_URL,
-      getToken: () => storagePort.getItem('auth_token'),
+      getToken: async () => process.env.EXPO_PUBLIC_GITHUB_TOKEN ?? null,
     });
   }
 
-  static getInstance(storagePort: StoragePort): GitHubApiService {
+  static getInstance(): GitHubApiService {
     if (!GitHubApiService.instance) {
-      GitHubApiService.instance = new GitHubApiService(storagePort);
+      GitHubApiService.instance = new GitHubApiService();
     }
     return GitHubApiService.instance;
   }
