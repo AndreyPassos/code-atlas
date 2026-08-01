@@ -27,11 +27,13 @@ The test's own grading criteria weight "Arquitetura & Desacoplamento" and "Múlt
 ## Tech Stack
 
 - Expo SDK 56, React Native 0.85, TypeScript 6 (strict mode, no `any`)
-- NativeWind (Tailwind for React Native) — CSS-variable-driven design tokens, light/dark mode
+- NativeWind (Tailwind for React Native) — CSS-variable-driven design tokens, manual + system light/dark mode
 - React Navigation 7
 - TanStack Query (React Query) — cache, infinite queries, pull-to-refresh
-- Zustand — UI-only state (active provider, search query)
+- Zustand — UI-only state; today that's just `activeProvider` (search query, issue filter, etc. are local component state, not global)
 - Axios — HTTP client with request/response interceptors
+- `@gorhom/bottom-sheet` — provider switcher, reachable from both the Sources tab and a shortcut on the Search screen
+- `react-native-toast-message` — non-blocking error/warning notifications (see [UX patterns](#ux-patterns))
 - Jest + React Native Testing Library
 - Reactotron — dev-only network/state inspector (see [Debugging](#debugging))
 
@@ -49,11 +51,19 @@ src/
 
 The app supports runtime switching between GitHub and GitLab with **zero UI changes**:
 
-1. User taps a provider on the Sources tab (or the "Trocar" shortcut shown on the Search screen — switching isn't limited to app startup)
-2. Zustand updates `activeProvider`
+1. User picks a provider on the Sources tab, or opens the same picker as a bottom sheet from the Search screen (`ProviderSwitchSheet`) — switching isn't limited to app startup or a single screen
+2. Zustand updates `activeProvider`; a toast confirms the switch
 3. Each screen calls `ProviderFactory.create(activeProvider)` — the single point where a provider type resolves to concrete adapters
-4. React Query hooks receive the new `RepositoryPort`/`IssuePort` instances and automatically refetch under a query key that includes the provider
+4. React Query hooks receive the new `RepositoryPort`/`IssuePort` instances. Every query key includes the active provider (`['repositories', provider, 'search', query]`, etc.), so switching invalidates the previous provider's cache and forces a real refetch instead of silently reusing GitHub's cached results under GitLab's tab
 5. GitHub and GitLab return structurally different JSON (different field names, different pagination — array + headers for GitLab vs. `{items, total_count}` body for GitHub) — this is fully absorbed by each provider's DTO + mapper. The domain `Repository`/`Issue` shape is identical regardless of source.
+
+## UX patterns
+
+- **Loading**: `Spinner` on first load, `Skeleton` available in the design system (not currently wired into a real loading state — see below)
+- **Empty state**: `EmptyState` when a search/issues list resolves with zero items
+- **Errors — blocking vs. non-blocking**: `ErrorState` (full-screen, with retry) only when a query has _no_ cached data to fall back on. A refetch/pull-to-refresh failure with results already on screen doesn't wipe them — it surfaces as a **toast** instead, so the user keeps what they had while a background retry can succeed silently
+- **Pull-to-refresh** and **infinite scroll** on Search and Issues
+- **300ms debounced search**, dismiss-keyboard-on-background-tap, `keyboardShouldPersistTaps="handled"` so a first tap on a result while the keyboard is open still registers
 
 ## Environment variables (optional)
 
@@ -82,6 +92,8 @@ npm test -- path/to/test.spec.ts      # single file
 ```
 
 Domain use cases, mappers, and design system components are covered. Snapshot tests were deliberately avoided (brittle, low signal).
+
+`@testing-library/react-native@14` requires the `test-renderer` package as a real peer dependency, which had never been installed — the original setup instead redirected it to the legacy `react-test-renderer` via `moduleNameMapper`, with a hand-written manual mock apparently meant to bridge the gap. `moduleNameMapper` takes priority over manual `__mocks__`, though, so that mock was never actually used, and the plain redirect doesn't implement real event dispatch. Net effect: `fireEvent.press`/`fireEvent.changeText` ran without error but silently did nothing — which had masked two tests calling `.props.onPress()`/`.props.onChangeText()` directly instead of firing a real event, passing for the wrong reason. Installed `test-renderer` for real, removed the mapper/mock, fixed both tests to use `fireEvent` against the actual host node.
 
 ## Code quality
 
@@ -124,7 +136,15 @@ Este projeto foi construído com assistência intensiva de IA (Claude), em duas 
 - Campo `watchers` ausente na entidade `Repository` (exigido explicitamente pelo PDF §4.3), texto de UI inteiramente em inglês (o PDF é em português), ausência de ícones nas abas, paleta de cores genérica em vez de referenciar a identidade visual do próprio PDF, entre outros itens menores.
 - **Decisão de escopo**: removida completamente a tela de login/OAuth e toda a camada de domínio de autenticação (`AuthPort`, `LoginUseCase`, `LogoutUseCase`, adapters de auth, `StoragePort`/SecureStore) — nada disso é exigido pelo PDF, e o gate de login impedia o app de abrir direto na tela que o PDF define como inicial (Source Selector).
 
-**O que foi revisado/rejeitado da IA:** todo o código gerado na Fase 1 foi lido, testado (`tsc`, `eslint`, `jest`) e comparado linha a linha contra o PDF real antes de qualquer correção ser aplicada — nenhuma mudança foi aceita sem entender por que o comportamento anterior estava errado.
+**Fase 3 — polimento e correção de bugs adicionais**, encontrados ao adicionar bottom sheet (troca de fonte), toast (avisos/erros) e ao revisar boas práticas de React/testes:
+
+- **Cache não isolado por fonte**: nenhuma query key incluía o provider ativo (`['repositories', 'search', query]` era igual pra GitHub e GitLab) — trocar de fonte reaproveitava o cache da fonte anterior em vez de buscar de novo. Corrigido incluindo o provider em toda key.
+- **Violações de rules-of-hooks**: `Skeleton` e `QueryProvider` liam `useRef(...).current` durante o render (proibido pelas regras de hooks do React — só devia ler/escrever refs em efeitos/handlers); trocado por `useState(() => valor)[0]` (lazy init seguro). `Skeleton` também nunca parava a animação em loop no unmount.
+- **`ActivityIndicator` com tamanho ignorado**: o `size` numérico do RN `ActivityIndicator` é amplamente ignorado pelas views nativas — os 3 tamanhos do `Spinner` (sm/md/lg) renderizavam visualmente idênticos. Corrigido com `transform: scale`.
+- **`fireEvent` silenciosamente quebrado**: ver seção [Testing](#testing) — bug de configuração de teste que fazia `fireEvent.press`/`fireEvent.changeText` rodarem sem erro e sem disparar nada, mascarando dois testes que na prática não testavam interação real.
+- **Interceptor de retry morto e ordem errada de interceptors**, **paginação do GitLab assumindo shape errado de resposta**, **campo `watchers` ausente**: ver commits `fix: correct GitHub/GitLab API integration`.
+
+**O que foi revisado/rejeitado da IA:** todo o código gerado na Fase 1 foi lido, testado (`tsc`, `eslint`, `jest`) e comparado linha a linha contra o PDF real antes de qualquer correção ser aplicada — nenhuma mudança foi aceita sem entender por que o comportamento anterior estava errado. Boa parte dos bugs das Fases 2 e 3 só apareceram porque o código da Fase 1 nunca tinha sido de fato exercitado contra as APIs reais nem testado com interações reais.
 
 ## O que eu faria diferente com mais tempo
 
