@@ -8,6 +8,28 @@ export interface MarkdownTextProps {
   testID?: string;
 }
 
+const ALLOWED_URL_SCHEMES = new Set(['https:', 'http:']);
+
+// README content comes from an external, untrusted source (any repo owner's
+// markdown) -- a link isn't guaranteed to be http(s). Reject other schemes
+// (javascript:, custom app schemes, intent: on Android, ...) before opening.
+async function openMarkdownLink(url: string): Promise<void> {
+  let scheme: string;
+  try {
+    scheme = new URL(url).protocol;
+  } catch {
+    return;
+  }
+
+  if (!ALLOWED_URL_SCHEMES.has(scheme)) {
+    return;
+  }
+
+  if (await Linking.canOpenURL(url)) {
+    await Linking.openURL(url);
+  }
+}
+
 interface ColorScheme {
   readonly background: string;
   readonly surface: string;
@@ -72,7 +94,7 @@ export function MarkdownText({ content, testID = 'markdown-text' }: MarkdownText
       markdown={content}
       flavor="github"
       selectable
-      onLinkPress={({ url }) => Linking.openURL(url)}
+      onLinkPress={({ url }) => openMarkdownLink(url)}
       markdownStyle={buildMarkdownStyle(scheme)}
     />
   );
