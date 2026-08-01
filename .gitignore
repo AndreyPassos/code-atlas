@@ -1,6 +1,11 @@
 node_modules/
 .expo/
 dist/
+
+# Environment variables — never commit real tokens
+.env
+.env.local
+.env.*.local
 npm-debug.*
 *.jks
 *.p8
