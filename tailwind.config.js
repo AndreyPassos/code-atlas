@@ -50,6 +50,11 @@ module.exports = {
         xxl: '24px',
         xxxl: '32px',
       },
+      height: {
+        sm: '32px',
+        md: '44px',
+        lg: '56px',
+      },
     },
   },
   plugins: [],
