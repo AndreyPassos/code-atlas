@@ -4,7 +4,7 @@ import { Text } from '../text';
 type ButtonVariant = 'primary' | 'secondary' | 'ghost';
 type ButtonSize = 'sm' | 'md' | 'lg';
 
-interface ButtonProps extends Omit<TouchableOpacityProps, 'style'> {
+export interface ButtonProps extends Omit<TouchableOpacityProps, 'style'> {
   variant?: ButtonVariant;
   size?: ButtonSize;
   children: React.ReactNode;
@@ -16,13 +16,19 @@ const variantClasses: Record<ButtonVariant, string> = {
   ghost: 'bg-transparent active:bg-surface',
 };
 
+const variantTextClasses: Record<ButtonVariant, string> = {
+  primary: 'text-white',
+  secondary: 'text-text',
+  ghost: 'text-primary',
+};
+
 const sizeClasses: Record<ButtonSize, string> = {
   sm: 'h-sm px-md',
   md: 'h-md px-lg',
   lg: 'h-lg px-xl',
 };
 
-const textVariantClasses: Record<ButtonSize, string> = {
+const textSizeClasses: Record<ButtonSize, string> = {
   sm: 'text-sm font-medium',
   md: 'text-md font-semibold',
   lg: 'text-lg font-semibold',
@@ -47,7 +53,9 @@ export function Button({
       accessibilityRole="button"
       {...props}>
       {typeof children === 'string' ? (
-        <Text className={textVariantClasses[size]}>{children}</Text>
+        <Text className={`${textSizeClasses[size]} ${variantTextClasses[variant]}`}>
+          {children}
+        </Text>
       ) : (
         children
       )}

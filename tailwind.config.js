@@ -1,29 +1,44 @@
 /** @type {import('tailwindcss').Config} */
+const withOpacity = (variable) => `rgb(var(${variable}) / <alpha-value>)`;
+
 module.exports = {
-  content: [
-    './App.{js,ts,tsx}',
-    './src/**/*.{js,ts,tsx}',
-  ],
+  content: ['./App.{js,ts,tsx}', './src/**/*.{js,ts,tsx}'],
   presets: [require('nativewind/preset')],
+  // 'class' (not 'media') so the Design System showcase can offer a manual
+  // light/dark switch per the test's recommendation — NativeWind's
+  // useColorScheme().setColorScheme() requires this mode to work at all.
+  darkMode: 'class',
   theme: {
     extend: {
       colors: {
-        background: { light: '#FFFFFF', dark: '#000000' },
-        surface: { light: '#F5F5F5', dark: '#1C1C1E' },
-        'surface-hover': { light: '#EBEBEB', dark: '#2C2C2E' },
-        text: { light: '#1A1A1A', dark: '#FFFFFF' },
-        'text-secondary': { light: '#666666', dark: '#8E8E93' },
-        'text-tertiary': { light: '#999999', dark: '#636366' },
-        primary: { light: '#007AFF', dark: '#0A84FF' },
-        'primary-hover': { light: '#0066DD', dark: '#409CFF' },
-        error: { light: '#FF3B30', dark: '#FF453A' },
-        'error-hover': { light: '#DD2F28', dark: '#FF6961' },
-        success: { light: '#34C759', dark: '#30D158' },
-        warning: { light: '#FF9500', dark: '#FF9F0A' },
-        border: { light: '#E5E5E5', dark: '#38383A' },
-        'border-hover': { light: '#CCCCCC', dark: '#48484A' },
-        skeleton: { light: '#E5E5E5', dark: '#38383A' },
-        'skeleton-highlight': { light: '#F5F5F5', dark: '#48484A' },
+        background: withOpacity('--color-background'),
+        surface: {
+          DEFAULT: withOpacity('--color-surface'),
+          hover: withOpacity('--color-surface-hover'),
+        },
+        text: {
+          DEFAULT: withOpacity('--color-text'),
+          secondary: withOpacity('--color-text-secondary'),
+          tertiary: withOpacity('--color-text-tertiary'),
+        },
+        primary: {
+          DEFAULT: withOpacity('--color-primary'),
+          hover: withOpacity('--color-primary-hover'),
+        },
+        error: {
+          DEFAULT: withOpacity('--color-error'),
+          hover: withOpacity('--color-error-hover'),
+        },
+        success: withOpacity('--color-success'),
+        warning: withOpacity('--color-warning'),
+        border: {
+          DEFAULT: withOpacity('--color-border'),
+          hover: withOpacity('--color-border-hover'),
+        },
+        skeleton: {
+          DEFAULT: withOpacity('--color-skeleton'),
+          highlight: withOpacity('--color-skeleton-highlight'),
+        },
       },
       spacing: {
         xxs: '2px',

@@ -1,3 +1,58 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/**
+ * Design token bridge: mirrors src/shared/design-tokens/colors.ts as RGB triplets
+ * so Tailwind can compose them with opacity (`rgb(var(--x) / <alpha-value>)`).
+ * Keep both files in sync when the palette changes.
+ *
+ * `primary` is a teal-green (#0F9D77 / #2DD4A7), a visual approximation of the
+ * teal-green accent used in the technical test's own PDF branding — not a pixel
+ * sample. Kept distinct in hue from `success` (a plain iOS-style green) so the
+ * two don't read as the same color.
+ */
+:root {
+  --color-background: 255 255 255;
+  --color-surface: 245 245 245;
+  --color-surface-hover: 235 235 235;
+  --color-text: 26 26 26;
+  --color-text-secondary: 102 102 102;
+  --color-text-tertiary: 153 153 153;
+  --color-primary: 15 157 119;
+  --color-primary-hover: 12 125 95;
+  --color-error: 255 59 48;
+  --color-error-hover: 221 47 40;
+  --color-success: 52 199 89;
+  --color-warning: 255 149 0;
+  --color-border: 229 229 229;
+  --color-border-hover: 204 204 204;
+  --color-skeleton: 229 229 229;
+  --color-skeleton-highlight: 245 245 245;
+}
+
+/*
+ * Class-based (not @media) so the Design System showcase's manual light/dark
+ * switch can override it via NativeWind's useColorScheme().setColorScheme() —
+ * NativeWind still initializes/follows the OS scheme automatically until the
+ * user explicitly overrides it, then reflects that choice everywhere via the
+ * `dark` class instead of a plain media query.
+ */
+.dark:root {
+  --color-background: 0 0 0;
+  --color-surface: 28 28 30;
+  --color-surface-hover: 44 44 46;
+  --color-text: 255 255 255;
+  --color-text-secondary: 142 142 147;
+  --color-text-tertiary: 99 99 102;
+  --color-primary: 45 212 167;
+  --color-primary-hover: 85 224 188;
+  --color-error: 255 69 58;
+  --color-error-hover: 255 105 97;
+  --color-success: 48 209 88;
+  --color-warning: 255 159 10;
+  --color-border: 56 56 58;
+  --color-border-hover: 72 72 74;
+  --color-skeleton: 56 56 58;
+  --color-skeleton-highlight: 72 72 74;
+}

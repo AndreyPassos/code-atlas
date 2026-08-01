@@ -25,8 +25,14 @@ const colorClasses: Record<TextColor, string> = {
   success: 'text-success',
 };
 
-export function Text({ variant = 'body', color, className, children, ...props }: TextProps) {
-  const colorClass = color ? colorClasses[color] : '';
+export function Text({
+  variant = 'body',
+  color = 'primary',
+  className,
+  children,
+  ...props
+}: TextProps) {
+  const colorClass = color === 'primary' ? 'text-text' : colorClasses[color];
   return (
     <RNText className={`${variantClasses[variant]} ${colorClass} ${className ?? ''}`} {...props}>
       {children}
