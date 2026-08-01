@@ -3,7 +3,7 @@ import { Text as RNText, TextProps as RNTextProps } from 'react-native';
 type TextVariant = 'heading' | 'subheading' | 'body' | 'caption' | 'label';
 type TextColor = 'primary' | 'secondary' | 'tertiary' | 'error' | 'success';
 
-interface TextProps extends Omit<RNTextProps, 'style'> {
+export interface TextProps extends Omit<RNTextProps, 'style'> {
   variant?: TextVariant;
   color?: TextColor;
   children: React.ReactNode;
