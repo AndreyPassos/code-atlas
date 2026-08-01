@@ -1,26 +1,25 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useRef } from 'react';
+import { useState } from 'react';
 
 interface QueryProviderProps {
   children: React.ReactNode;
 }
 
 export function QueryProvider({ children }: QueryProviderProps) {
-  const queryClientRef = useRef(
-    new QueryClient({
-      defaultOptions: {
-        queries: {
-          retry: 3,
-          staleTime: 5 * 60 * 1000,
-          gcTime: 30 * 60 * 1000,
+  // Lazy useState initializer, not useRef().current: reading a ref's value
+  // during render is against the rules of hooks — see Skeleton for the same fix.
+  const [queryClient] = useState(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: {
+            retry: 3,
+            staleTime: 5 * 60 * 1000,
+            gcTime: 30 * 60 * 1000,
+          },
         },
-      },
-    })
+      })
   );
 
-  return (
-    <QueryClientProvider client={queryClientRef.current}>
-      {children}
-    </QueryClientProvider>
-  );
+  return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
 }

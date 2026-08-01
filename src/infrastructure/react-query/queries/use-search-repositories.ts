@@ -1,20 +1,22 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
 import type { RepositoryPort } from '../../../domain/ports';
+import type { ProviderType } from '../../../domain/value-objects';
 import { queryKeys } from '../query-keys';
 
 const PER_PAGE = 20;
 
 interface UseSearchRepositoriesParams {
+  provider: ProviderType;
   query: string;
   enabled?: boolean;
 }
 
 export function useSearchRepositories(
   repositoryPort: RepositoryPort,
-  { query, enabled = true }: UseSearchRepositoriesParams
+  { provider, query, enabled = true }: UseSearchRepositoriesParams
 ) {
   return useInfiniteQuery({
-    queryKey: queryKeys.repositories.search(query),
+    queryKey: queryKeys.repositories.search(provider, query),
     queryFn: ({ pageParam = 1 }) =>
       repositoryPort.search({
         query,

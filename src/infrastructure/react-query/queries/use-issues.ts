@@ -1,19 +1,20 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
 import type { IssuePort } from '../../../domain/ports';
-import type { IssueState } from '../../../domain/value-objects';
+import type { IssueState, ProviderType } from '../../../domain/value-objects';
 import { queryKeys } from '../query-keys';
 
 const PER_PAGE = 20;
 
 interface UseIssuesParams {
+  provider: ProviderType;
   owner: string;
   name: string;
   state: IssueState | 'all';
 }
 
-export function useIssues(issuePort: IssuePort, { owner, name, state }: UseIssuesParams) {
+export function useIssues(issuePort: IssuePort, { provider, owner, name, state }: UseIssuesParams) {
   return useInfiniteQuery({
-    queryKey: queryKeys.issues.list(owner, name, state),
+    queryKey: queryKeys.issues.list(provider, owner, name, state),
     queryFn: ({ pageParam = 1 }) =>
       issuePort.getIssues({
         owner,

@@ -1,10 +1,12 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
 import type { IssuePort } from '../../../domain/ports';
+import type { ProviderType } from '../../../domain/value-objects';
 import { queryKeys } from '../query-keys';
 
 const PER_PAGE = 20;
 
 interface UseIssueCommentsParams {
+  provider: ProviderType;
   owner: string;
   name: string;
   issueNumber: number;
@@ -12,10 +14,10 @@ interface UseIssueCommentsParams {
 
 export function useIssueComments(
   issuePort: IssuePort,
-  { owner, name, issueNumber }: UseIssueCommentsParams
+  { provider, owner, name, issueNumber }: UseIssueCommentsParams
 ) {
   return useInfiniteQuery({
-    queryKey: queryKeys.issues.comments(owner, name, issueNumber),
+    queryKey: queryKeys.issues.comments(provider, owner, name, issueNumber),
     queryFn: ({ pageParam = 1 }) =>
       issuePort.getComments({
         owner,
