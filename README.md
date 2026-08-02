@@ -2,6 +2,14 @@
 
 A React Native/Expo application for browsing GitHub and GitLab repositories with runtime provider switching.
 
+## Quickstart
+
+```bash
+npm install
+npx expo prebuild      # generates ios/ and android/ (required — see Native modules below)
+npm run ios            # or: npm run android
+```
+
 ## Architecture
 
 This project follows **Clean Architecture** with **Hexagonal (Ports & Adapters)** principles.
@@ -78,12 +86,7 @@ cp .env.example .env
 
 `.env` is gitignored — never commit real tokens.
 
-## Getting started
-
-```bash
-npm install
-npm start        # or: npm run ios / npm run android
-```
+See [Quickstart](#quickstart) at the top for the full setup — `npm start` (Expo Go) works for everything except README rendering, which needs the dev client built via `run:ios`/`run:android` (see [Native modules](#native-modules)).
 
 ## Testing
 
@@ -93,7 +96,14 @@ npm test -- --watch                   # watch mode
 npm test -- path/to/test.spec.ts      # single file
 ```
 
-Domain use cases, mappers, and design system components are covered. Snapshot tests were deliberately avoided (brittle, low signal).
+Domain use cases, mappers, design system components, and one screen (`RepositorySearchScreen`, with `useSearchRepositories`/`useProviderStore` mocked) are covered. Snapshot tests were deliberately avoided (brittle, low signal).
+
+Getting a screen test running at all required fixing broken Jest infra, not just writing the test:
+
+- `react-native-enriched-markdown` (native-only, ESM) and `@gorhom/bottom-sheet` (pulls in `react-native-reanimated`/`react-native-worklets`, whose native part never initializes under Jest for this version combo) get pulled in transitively by any screen importing the shared components barrel — both have no test binding, and now resolve to plain `<View>`/`<Text>` stubs in `src/test-mocks/` via `moduleNameMapper`.
+- `jest.config.js`'s `transformIgnorePatterns` had a regex bug — `react-native` in the allowlist required a literal trailing `/`, so it only ever matched `node_modules/react-native/` exactly and silently failed to transform `react-native-gesture-handler`, `react-native-reanimated`, etc. (packages jest-expo's own default pattern already handled correctly before this project's config overrode it).
+- `jest.setup.js` existed but was never wired into `jest.config.js`'s `setupFiles` — a dead file. Now wires up `react-native-gesture-handler/jestSetup` and the official `react-native-safe-area-context/jest/mock`.
+- Fixing that surfaced a `tsc` regression: `jest.setup.js` wasn't in `tsconfig.json`'s `exclude` (only `jest.config.js` was), so once it required the safe-area-context mock, `tsc` walked into that package's real `.tsx` source (`customConditions: ["react-native"]` resolves there, not the compiled `.d.ts`) and failed on `process.env.NODE_ENV` — a property `env.d.ts`'s narrowed global `process` type doesn't declare. Added `jest.setup.js` to `tsconfig.json`'s `exclude`.
 
 `@testing-library/react-native@14` requires the `test-renderer` package as a real peer dependency, which had never been installed — the original setup instead redirected it to the legacy `react-test-renderer` via `moduleNameMapper`, with a hand-written manual mock apparently meant to bridge the gap. `moduleNameMapper` takes priority over manual `__mocks__`, though, so that mock was never actually used, and the plain redirect doesn't implement real event dispatch. Net effect: `fireEvent.press`/`fireEvent.changeText` ran without error but silently did nothing — which had masked two tests calling `.props.onPress()`/`.props.onChangeText()` directly instead of firing a real event, passing for the wrong reason. Installed `test-renderer` for real, removed the mapper/mock, fixed both tests to use `fireEvent` against the actual host node.
 
@@ -122,17 +132,18 @@ npx expo run:ios     # or: npx expo run:android
 
 ## Trade-offs
 
-| Decision                                    | Why                                                                                                                                                                                           |
-| ------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Zustand + React Query split                 | Zustand for UI-only state (`activeProvider`, persisted theme preference), React Query for server state — no overlap                                                                           |
-| Zustand `persist` + AsyncStorage for theme  | NativeWind's own colorScheme has no persistence; a `ThemeSync` component applies the persisted preference to NativeWind on mount so it survives an app restart instead of resetting to system |
-| Factory Pattern for providers               | Single swap point, no `if`/`else` scattered across screens                                                                                                                                    |
-| Branded types for repository/issue IDs      | Type safety prevents accidentally mixing an ID from one entity with another                                                                                                                   |
-| Native markdown renderer over a pure-JS one | `react-native-enriched-markdown` gives real CommonMark + GFM (tables, task lists) natively; costs Expo Go compatibility (needs a dev client) — worth it since READMEs commonly use both       |
-| No snapshot tests                           | Brittle, low value, hard to maintain — assertions on behavior instead                                                                                                                         |
-| NativeWind + CSS variables                  | Design tokens as CSS custom properties (`rgb(var(--x) / <alpha-value>)`) so light/dark is one selector switch, not per-component logic                                                        |
-| No manual OAuth login                       | Not required by the test brief (only an optional `.env` token is) — a login gate would have blocked reviewers from reaching the actual graded screens for no requirement gain                 |
-| No offline/NetInfo integration              | Would need a new native dependency I couldn't verify on a real device in this environment — left undone rather than half-wired                                                                |
+| Decision                                    | Why                                                                                                                                                                                                                                                            |
+| ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Zustand + React Query split                 | Zustand for UI-only state (`activeProvider`, persisted theme preference), React Query for server state — no overlap                                                                                                                                            |
+| Zustand `persist` + AsyncStorage for theme  | NativeWind's own colorScheme has no persistence; a `ThemeSync` component applies the persisted preference to NativeWind on mount so it survives an app restart instead of resetting to system                                                                  |
+| Factory Pattern for providers               | Single swap point, no `if`/`else` scattered across screens                                                                                                                                                                                                     |
+| Branded types for repository/issue IDs      | Type safety prevents accidentally mixing an ID from one entity with another                                                                                                                                                                                    |
+| Native markdown renderer over a pure-JS one | `react-native-enriched-markdown` gives real CommonMark + GFM (tables, task lists) natively; costs Expo Go compatibility (needs a dev client) — worth it since READMEs commonly use both                                                                        |
+| No snapshot tests                           | Brittle, low value, hard to maintain — assertions on behavior instead                                                                                                                                                                                          |
+| NativeWind + CSS variables                  | Design tokens as CSS custom properties (`rgb(var(--x) / <alpha-value>)`) so light/dark is one selector switch, not per-component logic                                                                                                                         |
+| No manual OAuth login                       | Not required by the test brief (only an optional `.env` token is) — a login gate would have blocked reviewers from reaching the actual graded screens for no requirement gain                                                                                  |
+| No offline/NetInfo integration              | Would need a new native dependency I couldn't verify on a real device in this environment — left undone rather than half-wired                                                                                                                                 |
+| README links restricted to http(s)          | README markdown is untrusted content from any repo owner — a link isn't guaranteed to be http(s) (`javascript:`, custom app schemes, `intent:` on Android). `onLinkPress` rejects anything outside an http(s) allowlist and checks `canOpenURL` before opening |
 
 ## Uso de IA (declaração conforme solicitado no teste)
 
@@ -160,13 +171,22 @@ Este projeto foi construído com assistência intensiva de IA (Claude), em duas 
 - **Interceptor de retry morto e ordem errada de interceptors**, **paginação do GitLab assumindo shape errado de resposta**, **campo `watchers` ausente**: ver commits `fix: correct GitHub/GitLab API integration`.
 - **Markdown do README**: trocado o parser manual (só títulos/negrito/listas) por [`react-native-enriched-markdown`](https://github.com/software-mansion/react-native-enriched-markdown) — renderização nativa CommonMark + GFM (tabelas, task lists), sem WebView. Exige New Architecture (já habilitada no projeto) e não roda no Expo Go — precisa de `expo prebuild` + dev client.
 
+**Fase 4 — infraestrutura de teste de tela.** O item "testes de tela" ficou pendente por um bom tempo em [O que eu faria diferente](#o-que-eu-faria-diferente-com-mais-tempo) porque não era só escrever o teste — a configuração de Jest do projeto não sustentava renderizar uma tela real:
+
+- `react-native-enriched-markdown` (nativo puro, ESM) e `@gorhom/bottom-sheet` (que arrasta `react-native-reanimated`/`react-native-worklets`, cuja parte nativa nunca inicializa sob Jest nessa combinação de versões) são puxados transitivamente por qualquer tela que importe o barrel de componentes — nenhum dos dois tem binding utilizável em teste. Resolvido com stubs próprios (`src/test-mocks/`) via `moduleNameMapper`.
+- `transformIgnorePatterns` do `jest.config.js` tinha um bug de regex: exigia `/` logo após cada nome de pacote no allowlist, então só casava `node_modules/react-native/` exato — silenciosamente parava de transformar `react-native-gesture-handler`, `react-native-reanimated` etc. (pacotes que o padrão default do `jest-expo` já cobria corretamente antes desse projeto sobrescrever a config).
+- `jest.setup.js` existia mas nunca tinha sido ligado ao `setupFiles` do `jest.config.js` — arquivo morto. Corrigido, agora carrega `react-native-gesture-handler/jestSetup` e o mock oficial de `react-native-safe-area-context`.
+- Isso expôs uma regressão no `tsc`: `jest.setup.js` não estava no `exclude` do `tsconfig.json` (só `jest.config.js` estava), então ao carregar o mock de safe-area-context o `tsc` seguia para o `.tsx` fonte real do pacote (`customConditions: ["react-native"]` resolve para lá, não para o `.d.ts` compilado) e quebrava em `process.env.NODE_ENV` — propriedade que o `env.d.ts` do projeto (que estreita o tipo global de `process`) não declara. Corrigido adicionando `jest.setup.js` ao `exclude`.
+
+Ver detalhes completos em [Testing](#testing).
+
 **O que foi revisado/rejeitado da IA:** todo o código gerado na Fase 1 foi lido, testado (`tsc`, `eslint`, `jest`) e comparado linha a linha contra o PDF real antes de qualquer correção ser aplicada — nenhuma mudança foi aceita sem entender por que o comportamento anterior estava errado. Boa parte dos bugs das Fases 2 e 3 só apareceram porque o código da Fase 1 nunca tinha sido de fato exercitado contra as APIs reais nem testado com interações reais.
 
 ## O que eu faria diferente com mais tempo
 
 - OAuth real para GitLab é factível sem backend (Authorization Code + PKCE, aplicação pública sem client secret); para GitHub exigiria um backend mínimo só para trocar `code` por `token` (OAuth Apps clássicos do GitHub não suportam PKCE puro) — não implementado por não ser exigido pelo PDF, mas seria o próximo passo natural caso autenticação real fosse necessária.
 - Suporte offline (§7 do PDF) com `@react-native-community/netinfo` — mostrar dados em cache com indicador de "sem conexão" e nova tentativa automática ao reconectar.
-- Testes de tela (screen-level, com mock dos hooks) além dos testes de domínio/mapper/componente já existentes.
+- Mais testes de tela cobrindo os fluxos restantes (Issues, Repository Details, Source Selector) seguindo o mesmo padrão estabelecido no `RepositorySearchScreen` — ver [Testing](#testing).
 
 ## License
 
