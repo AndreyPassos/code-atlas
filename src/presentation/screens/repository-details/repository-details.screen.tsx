@@ -50,7 +50,7 @@ export function RepositoryDetailsScreen({ route, navigation }: Props) {
 
   return (
     <ScrollView className="flex-1 bg-background">
-      <View className="gap-lg p-lg">
+      <View className="gap-lg p-lg pb-xxxl">
         <View>
           <Text variant="heading">{repository.name}</Text>
           <Text variant="body" color="secondary">
