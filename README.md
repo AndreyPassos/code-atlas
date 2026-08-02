@@ -96,7 +96,7 @@ npm test -- --watch                   # watch mode
 npm test -- path/to/test.spec.ts      # single file
 ```
 
-Domain use cases, mappers, design system components, and one screen (`RepositorySearchScreen`, with `useSearchRepositories`/`useProviderStore` mocked) are covered. Snapshot tests were deliberately avoided (brittle, low signal).
+Domain use cases, mappers, design system components, and all four screens (`SourceSelector`, `RepositorySearch`, `RepositoryDetails`, `Issues` — React Query/Zustand hooks mocked, navigation asserted via a stub `navigation.navigate`) are covered. Snapshot tests were deliberately avoided (brittle, low signal).
 
 Getting a screen test running at all required fixing broken Jest infra, not just writing the test:
 
@@ -178,6 +178,8 @@ Este projeto foi construído com assistência intensiva de IA (Claude), em duas 
 - `jest.setup.js` existia mas nunca tinha sido ligado ao `setupFiles` do `jest.config.js` — arquivo morto. Corrigido, agora carrega `react-native-gesture-handler/jestSetup` e o mock oficial de `react-native-safe-area-context`.
 - Isso expôs uma regressão no `tsc`: `jest.setup.js` não estava no `exclude` do `tsconfig.json` (só `jest.config.js` estava), então ao carregar o mock de safe-area-context o `tsc` seguia para o `.tsx` fonte real do pacote (`customConditions: ["react-native"]` resolve para lá, não para o `.d.ts` compilado) e quebrava em `process.env.NODE_ENV` — propriedade que o `env.d.ts` do projeto (que estreita o tipo global de `process`) não declara. Corrigido adicionando `jest.setup.js` ao `exclude`.
 
+Com a infra corrigida, as 3 telas restantes (`RepositoryDetails`, `Issues`, `SourceSelector`) seguiram o mesmo padrão sem atrito adicional — nenhum novo bug de configuração apareceu.
+
 Ver detalhes completos em [Testing](#testing).
 
 **O que foi revisado/rejeitado da IA:** todo o código gerado na Fase 1 foi lido, testado (`tsc`, `eslint`, `jest`) e comparado linha a linha contra o PDF real antes de qualquer correção ser aplicada — nenhuma mudança foi aceita sem entender por que o comportamento anterior estava errado. Boa parte dos bugs das Fases 2 e 3 só apareceram porque o código da Fase 1 nunca tinha sido de fato exercitado contra as APIs reais nem testado com interações reais.
@@ -186,7 +188,6 @@ Ver detalhes completos em [Testing](#testing).
 
 - OAuth real para GitLab é factível sem backend (Authorization Code + PKCE, aplicação pública sem client secret); para GitHub exigiria um backend mínimo só para trocar `code` por `token` (OAuth Apps clássicos do GitHub não suportam PKCE puro) — não implementado por não ser exigido pelo PDF, mas seria o próximo passo natural caso autenticação real fosse necessária.
 - Suporte offline (§7 do PDF) com `@react-native-community/netinfo` — mostrar dados em cache com indicador de "sem conexão" e nova tentativa automática ao reconectar.
-- Mais testes de tela cobrindo os fluxos restantes (Issues, Repository Details, Source Selector) seguindo o mesmo padrão estabelecido no `RepositorySearchScreen` — ver [Testing](#testing).
 
 ## License
 
