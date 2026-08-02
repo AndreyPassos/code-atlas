@@ -1,4 +1,5 @@
 import { useLayoutEffect } from 'react';
+import { StatusBar } from 'expo-status-bar';
 import { useColorScheme } from 'nativewind';
 import { useThemeStore } from '../../infrastructure/hooks';
 
@@ -13,11 +14,11 @@ import { useThemeStore } from '../../infrastructure/hooks';
  */
 export function ThemeSync() {
   const theme = useThemeStore((state) => state.theme);
-  const { setColorScheme } = useColorScheme();
+  const { colorScheme, setColorScheme } = useColorScheme();
 
   useLayoutEffect(() => {
     setColorScheme(theme);
   }, [theme, setColorScheme]);
 
-  return null;
+  return <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />;
 }
