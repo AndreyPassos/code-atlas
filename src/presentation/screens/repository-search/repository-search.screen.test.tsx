@@ -92,4 +92,28 @@ describe('RepositorySearchScreen', () => {
       name: 'code-atlas',
     });
   });
+
+  it('navigates using the URL slug from fullName, not the display name, when they differ (e.g. GitLab)', async () => {
+    const gitlabRepo: Repository = {
+      ...repository,
+      id: 'repo-2' as Repository['id'],
+      name: 'Pipes and Paper',
+      fullName: 'afandian/pipes-and-paper',
+      owner: { login: 'afandian', avatarUrl: '', type: 'User' },
+    };
+    mockSearchResult({
+      data: {
+        pages: [{ items: [gitlabRepo], pagination: { page: 1, perPage: 20, totalCount: 1 } }],
+        pageParams: [1],
+      },
+    });
+    await render(<RepositorySearchScreen navigation={navigation} route={{} as never} />);
+
+    await fireEvent.press(screen.getByLabelText('Abrir afandian/pipes-and-paper'));
+
+    expect(navigation.navigate).toHaveBeenCalledWith('RepositoryDetails', {
+      owner: 'afandian',
+      name: 'pipes-and-paper',
+    });
+  });
 });

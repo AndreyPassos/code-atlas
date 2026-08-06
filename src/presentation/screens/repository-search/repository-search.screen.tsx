@@ -64,7 +64,13 @@ export function RepositorySearchScreen({ navigation }: Props) {
         accessibilityRole="button"
         accessibilityLabel={`Abrir ${item.fullName}`}
         onPress={() =>
-          navigation.navigate('RepositoryDetails', { owner: item.owner.login, name: item.name })
+          navigation.navigate('RepositoryDetails', {
+            owner: item.owner.login,
+            // item.name is the display title (e.g. GitLab's "Pipes and Paper"),
+            // which can differ from the URL-safe slug the API needs to look the
+            // repo up again. fullName's last segment is always the real slug.
+            name: item.fullName.slice(item.fullName.lastIndexOf('/') + 1),
+          })
         }>
         <Card className="mb-md">
           <Text variant="subheading">{item.name}</Text>
