@@ -49,4 +49,40 @@ describe('GitLabRepositoryMapper', () => {
     expect(result.owner.login).toBe('unknown');
     expect(result.owner.type).toBe('User');
   });
+
+  it('should derive login from path_with_namespace for group-owned repos (owner is null on GitLab for group namespaces)', () => {
+    const dto: GitLabRepositoryDTO = {
+      id: 456,
+      name: 'gitlab-ce',
+      path_with_namespace: 'gitlab-org/gitlab-ce',
+      description: 'GitLab Community Edition',
+      star_count: 5000,
+      forks_count: 1500,
+      language: 'Ruby',
+      owner: null,
+      last_activity_at: '2026-01-15T12:30:00Z',
+    };
+
+    const result = GitLabRepositoryMapper.toDomain(dto);
+
+    expect(result.owner.login).toBe('gitlab-org');
+  });
+
+  it('should derive full namespace path (including subgroups) as login', () => {
+    const dto: GitLabRepositoryDTO = {
+      id: 999,
+      name: 'project',
+      path_with_namespace: 'group/subgroup/project',
+      description: null,
+      star_count: 0,
+      forks_count: 0,
+      language: null,
+      owner: null,
+      last_activity_at: '2026-01-15T12:30:00Z',
+    };
+
+    const result = GitLabRepositoryMapper.toDomain(dto);
+
+    expect(result.owner.login).toBe('group/subgroup');
+  });
 });
